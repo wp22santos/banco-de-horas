@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { TimeEntry, NonAccountingEntry } from '../types';
 import * as api from '../services/api';
+import { useCache } from '../contexts/CacheContext';
 
 interface MonthSummary {
   days: {
@@ -40,25 +41,11 @@ const calculateWorkedHours = (entries: TimeEntry[]) => {
     // Calculando a diferença em minutos
     const diffMinutes = Math.round((end.getTime() - start.getTime()) / 1000 / 60);
     
-    // Calculando minutos adicionais noturnos (20% a mais para horas entre 22h e 5h)
-    const startHour = start.getHours();
-    let endHour = end.getHours();
-    if (end.getDate() > start.getDate()) {
-      endHour = endHour + 24;
-    }
-
-    let nightlyMinutes = 0;
-    for (let hour = startHour; hour < endHour; hour++) {
-      const currentHour = hour % 24;
-      if (currentHour >= 22 || currentHour < 5) {
-        nightlyMinutes += 60;
-      }
-    }
-
-    // Adiciona 20% do tempo noturno como adicional
-    const nightlyBonus = Math.round(nightlyMinutes * 0.2);
+    // Adicionando o tempo noturno (já vem calculado do backend)
+    const [nightHours, nightMinutes] = entry.night_time.split(':').map(Number);
+    const totalNightMinutes = (nightHours * 60) + nightMinutes;
     
-    totalMinutes += diffMinutes + nightlyBonus;
+    totalMinutes += diffMinutes + totalNightMinutes;
   });
 
   const hours = Math.floor(totalMinutes / 60);
@@ -90,74 +77,72 @@ const calculateHourBalance = (worked: string, expected: string) => {
   return `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
-// Função para calcular o número total de dias no mês
-const getDaysInMonth = (month: number, year: number) => {
-  // month já está em base 1 (1-12)
-  return new Date(year, month, 0).getDate();
-};
-
 export const useMonthData = (month: number, year: number) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<MonthData | null>(null);
+  const [updateTrigger, setUpdateTrigger] = useState(0);
   const navigate = useNavigate();
+  const { getMonthData, setMonthData, clearCache } = useCache();
 
   const fetchMonthData = async () => {
     try {
+      // Verificar cache primeiro
+      const cachedData = getMonthData(year, month);
+      if (cachedData) {
+        setData(cachedData);
+        return;
+      }
+
       setLoading(true);
       setError(null);
       
       console.log('Iniciando fetchMonthData para:', { month, year });
 
-      // Busca as entradas do mês
-      const [timeEntriesResponse, nonAccountingEntriesResponse] = await Promise.all([
+      // Busca as entradas do mês em paralelo
+      const [timeEntriesResponse, nonAccountingEntriesResponse, workingDaysResponse] = await Promise.all([
         api.getTimeEntries(month, year),
         api.getNonAccountingEntries(month, year),
+        supabase.rpc('calculate_working_days', {
+          p_month: month,
+          p_year: year,
+          p_user_id: (await supabase.auth.getSession()).data.session?.user?.id
+        })
       ]);
 
-      console.log('Respostas obtidas:', {
-        timeEntries: timeEntriesResponse.data,
-        nonAccounting: nonAccountingEntriesResponse.data
-      });
+      const timeEntries = timeEntriesResponse.data || [];
+      const nonAccountingEntries = nonAccountingEntriesResponse.data || [];
+      const workingDays = workingDaysResponse.data || 0;
 
-      if (timeEntriesResponse.error) throw timeEntriesResponse.error;
-      if (nonAccountingEntriesResponse.error) throw nonAccountingEntriesResponse.error;
+      // Calcular horas trabalhadas e esperadas
+      const worked = calculateWorkedHours(timeEntries);
+      const expected = calculateExpectedHours(workingDays, month, year);
+      const balance = calculateHourBalance(worked, expected);
 
-      // Calcular dias não contábeis
-      const nonAccountingDays = nonAccountingEntriesResponse.data?.reduce((acc, entry) => acc + entry.days, 0) || 0;
-      console.log('[Hook] Dias não contábeis calculados:', nonAccountingDays);
-
-      // Calcular total de dias no mês
-      const totalDays = getDaysInMonth(month, year);
-      const workingDays = totalDays - nonAccountingDays;
-
-      // Calcular horas
-      const workedHours = calculateWorkedHours(timeEntriesResponse.data || []);
-      const expectedHours = calculateExpectedHours(workingDays, month, year);
-      const balance = calculateHourBalance(workedHours, expectedHours);
-
-      const newData = {
+      const monthData = {
         summary: {
           days: {
-            total: totalDays,
-            nonAccounting: nonAccountingDays,
+            total: new Date(year, month, 0).getDate(),
+            nonAccounting: nonAccountingEntries.length,
             working: workingDays,
           },
           hours: {
-            expected: expectedHours,
-            worked: workedHours,
-            balance: balance,
+            expected,
+            worked,
+            balance,
           },
         },
         entries: {
-          turno: timeEntriesResponse.data || [],
-          naoContabil: nonAccountingEntriesResponse.data || [],
+          turno: timeEntries,
+          naoContabil: nonAccountingEntries,
         },
       };
 
-      console.log('[Hook] Atualizando dados:', newData);
-      setData(newData);
+      setData(monthData);
+      setMonthData(year, month, monthData); // Salvar no cache
+      
     } catch (err: any) {
+      console.error('Erro ao buscar dados do mês:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -216,7 +201,8 @@ export const useMonthData = (month: number, year: number) => {
       console.log('[Hook] Iniciando addTimeEntry:', entry);
       const data = await api.createTimeEntry(entry);
       console.log('[Hook] Time entry criada com sucesso:', data);
-      await fetchMonthData();
+      clearCache(); // Limpar cache ao adicionar nova entrada
+      setUpdateTrigger(prev => prev + 1); // Força atualização
       return data;
     } catch (err: any) {
       console.error('[Hook] Erro em addTimeEntry:', err);
@@ -229,7 +215,8 @@ export const useMonthData = (month: number, year: number) => {
       console.log('[Hook] Iniciando updateTimeEntry:', { id, entry });
       await api.updateTimeEntry(id, entry);
       console.log('[Hook] Time entry atualizada com sucesso');
-      await fetchMonthData();
+      clearCache(); // Limpar cache ao atualizar entrada
+      setUpdateTrigger(prev => prev + 1); // Força atualização
     } catch (err: any) {
       console.error('[Hook] Erro em updateTimeEntry:', err);
       throw new Error(err.message);
@@ -239,7 +226,8 @@ export const useMonthData = (month: number, year: number) => {
   const deleteTimeEntry = async (id: number) => {
     try {
       await api.deleteTimeEntry(id);
-      await fetchMonthData();
+      clearCache(); // Limpar cache ao deletar entrada
+      setUpdateTrigger(prev => prev + 1); // Força atualização
     } catch (err: any) {
       throw new Error(err.message);
     }
@@ -250,7 +238,8 @@ export const useMonthData = (month: number, year: number) => {
       console.log('[Hook] Iniciando addNonAccountingEntry:', entry);
       const data = await api.createNonAccountingEntry(entry);
       console.log('[Hook] Non-accounting entry criada com sucesso:', data);
-      await fetchMonthData();
+      clearCache(); // Limpar cache ao adicionar nova entrada
+      setUpdateTrigger(prev => prev + 1); // Força atualização
       return data;
     } catch (err: any) {
       console.error('[Hook] Erro em addNonAccountingEntry:', err);
@@ -261,7 +250,8 @@ export const useMonthData = (month: number, year: number) => {
   const updateNonAccountingEntry = async (id: number, entry: Partial<NonAccountingEntry>) => {
     try {
       await api.updateNonAccountingEntry(id, entry);
-      await fetchMonthData();
+      clearCache(); // Limpar cache ao atualizar entrada
+      setUpdateTrigger(prev => prev + 1); // Força atualização
     } catch (err: any) {
       throw new Error(err.message);
     }
@@ -270,7 +260,8 @@ export const useMonthData = (month: number, year: number) => {
   const deleteNonAccountingEntry = async (id: number) => {
     try {
       await api.deleteNonAccountingEntry(id);
-      await fetchMonthData();
+      clearCache(); // Limpar cache ao deletar entrada
+      setUpdateTrigger(prev => prev + 1); // Força atualização
     } catch (err: any) {
       throw new Error(err.message);
     }
@@ -278,7 +269,7 @@ export const useMonthData = (month: number, year: number) => {
 
   useEffect(() => {
     fetchMonthData();
-  }, [month, year]);
+  }, [month, year, updateTrigger]); // Adiciona updateTrigger como dependência
 
   return {
     loading,

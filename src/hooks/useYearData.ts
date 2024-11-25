@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { calculateHourBalance } from '../utils/calculations';
+import { useCache } from '../contexts/CacheContext';
 
 interface MonthData {
   month: number;
@@ -21,6 +22,7 @@ export const useYearData = (initialYear: number) => {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<YearData | null>(null);
   const navigate = useNavigate();
+  const { getYearData, setYearData } = useCache();
 
   const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -30,6 +32,13 @@ export const useYearData = (initialYear: number) => {
   useEffect(() => {
     const fetchYearData = async () => {
       try {
+        // Verificar cache primeiro
+        const cachedData = getYearData(year);
+        if (cachedData) {
+          setData(cachedData);
+          return;
+        }
+
         setLoading(true);
         setError(null);
 
@@ -40,36 +49,42 @@ export const useYearData = (initialYear: number) => {
           throw new Error('Usuário não autenticado');
         }
 
-        const monthsData: MonthData[] = [];
+        // Preparar arrays para chamadas paralelas
+        const months = Array.from({ length: 12 }, (_, i) => i + 1);
+        
+        // Fazer chamadas paralelas para calcular dias úteis
+        const workingDaysPromises = months.map(month => 
+          supabase.rpc('calculate_working_days', {
+            p_month: month,
+            p_year: year,
+            p_user_id: userId
+          })
+        );
 
-        // Buscar dados de cada mês
-        for (let month = 1; month <= 12; month++) {
-          // Calcular dias úteis do mês
-          const { data: workingDays, error: workingDaysError } = await supabase
-            .rpc('calculate_working_days', {
-              p_month: month,
-              p_year: year,
-              p_user_id: userId
-            });
-
-          if (workingDaysError) throw workingDaysError;
-
-          // Calcular horas previstas usando a mesma fórmula da página do mês
-          const totalDays = new Date(year, month, 0).getDate();
-          const expectedMinutes = Math.round((160 / totalDays) * workingDays * 60);
-
-          // Buscar o total de horas trabalhadas do mês
-          const { data: monthData, error: monthError } = await supabase
+        // Fazer chamadas paralelas para buscar horas trabalhadas
+        const monthDataPromises = months.map(month =>
+          supabase
             .from('monthly_hours')
             .select('total_worked_minutes')
             .eq('user_id', userId)
             .eq('month', month)
             .eq('year', year)
-            .maybeSingle();
+            .maybeSingle()
+        );
 
-          if (monthError) throw monthError;
+        // Aguardar todas as chamadas terminarem
+        const [workingDaysResults, monthDataResults] = await Promise.all([
+          Promise.all(workingDaysPromises),
+          Promise.all(monthDataPromises)
+        ]);
 
-          const totalWorkedMinutes = monthData?.total_worked_minutes || 0;
+        const monthsData: MonthData[] = months.map((month, index) => {
+          const workingDays = workingDaysResults[index].data;
+          const totalWorkedMinutes = monthDataResults[index].data?.total_worked_minutes || 0;
+
+          // Calcular horas previstas usando a mesma fórmula da página do mês
+          const totalDays = new Date(year, month, 0).getDate();
+          const expectedMinutes = Math.round((160 / totalDays) * workingDays * 60);
 
           // Converter minutos em formato HH:MM
           const formatHours = (minutes: number) => {
@@ -82,16 +97,19 @@ export const useYearData = (initialYear: number) => {
           const trabalhado = formatHours(totalWorkedMinutes);
           const saldo = calculateHourBalance(trabalhado, previsto);
 
-          monthsData.push({
+          return {
             month,
             name: monthNames[month - 1],
             previsto,
             trabalhado,
             saldo
-          });
-        }
+          };
+        });
 
-        setData({ months: monthsData });
+        const yearData = { months: monthsData };
+        setData(yearData);
+        setYearData(year, yearData); // Salvar no cache
+
       } catch (err: any) {
         setError(err.message);
       } finally {
