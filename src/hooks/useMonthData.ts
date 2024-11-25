@@ -148,7 +148,7 @@ export const useMonthData = (month: number, year: number) => {
         throw new Error('O horário de início não pode ser igual ao horário de fim');
       }
       
-      // Se horário final for menor que inicial, adicionar 1 dia
+      // Se horário final for menor que inicial, assumimos que passa da meia-noite
       if (end < start) {
         end = new Date(`2000-01-02T${entry.end_time}`);
       }
