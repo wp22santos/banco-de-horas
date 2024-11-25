@@ -25,7 +25,6 @@ import {
   LogOut
 } from 'lucide-react';
 
-import { formatDate } from '../utils/formatDate';
 import { formatDateWithDay } from '../utils/formatDateWithDay';
 import { calculateTotalTime } from '../utils/calculateTotalTime';
 

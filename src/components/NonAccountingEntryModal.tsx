@@ -95,10 +95,15 @@ export const NonAccountingEntryModal = ({
       }
 
       const fullEntry: Omit<NonAccountingEntry, 'id'> = {
-        ...entry,
         days: selectedDates.length,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        type: entry.type || 'Férias',
+        date: entry.date || selectedDates[0].toISOString().split('T')[0],
+        month: entry.month || month,
+        year: entry.year || year,
+        comment: entry.comment,
+        user_id: entry.user_id
       };
 
       await onSubmit(fullEntry);
