@@ -292,113 +292,61 @@ export const MonthDetailView = () => {
             {/* Month Summary Row */}
 
             <div className="p-4 md:p-6">
-
-              <h2 className="text-xl font-semibold mb-4">{monthNames[monthNumber - 1]} {yearNumber}</h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8">
-
-                <div className="flex flex-col items-center space-y-2">
-
-                  <p className="text-sm text-gray-500">Total de Dias</p>
-
-                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-
+              <h2 className="text-xl font-semibold mb-6">{monthNames[monthNumber - 1]} {yearNumber}</h2>
+              
+              {/* First Row - Days */}
+              <div className="grid grid-cols-3 gap-8 mb-8">
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-sm text-gray-500 mb-1 h-10">Total de Dias</p>
+                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-2">
                     <CalendarDays className="w-6 h-6 text-blue-600" />
-
                   </div>
-
                   <p className="text-lg font-semibold">{data.summary.days.total}</p>
-
                 </div>
 
-                
-
-                <div className="flex flex-col items-center space-y-2">
-
-                  <p className="text-sm text-gray-500">Não Contábil</p>
-
-                  <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-sm text-gray-500 mb-1 h-10">Não Contábil</p>
+                  <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-2">
                     <CalendarRange className="w-6 h-6 text-purple-600" />
-
                   </div>
-
                   <p className="text-lg font-semibold">{data.summary.days.nonAccounting}</p>
-
                 </div>
 
-                <div className="flex flex-col items-center space-y-2">
-
-                  <p className="text-sm text-gray-500">A Trabalhar</p>
-
-                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-sm text-gray-500 mb-1 h-10">A Trabalhar</p>
+                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-2">
                     <Briefcase className="w-6 h-6 text-green-600" />
-
                   </div>
-
                   <p className="text-lg font-semibold">{data.summary.days.working}</p>
-
                 </div>
-
               </div>
 
-            </div>
-
-            {/* Hours Summary Row */}
-
-            <div className="p-4 md:p-6">
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8">
-
-                <div className="flex flex-col items-center space-y-2">
-
-                  <p className="text-sm text-gray-500">Previsto</p>
-
-                  <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
-
+              {/* Second Row - Hours */}
+              <div className="grid grid-cols-3 gap-8">
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-sm text-gray-500 mb-2 h-5">Previsto</p>
+                  <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center mb-2">
                     <Clock className="w-6 h-6 text-indigo-600" />
-
                   </div>
-
                   <p className="text-lg font-semibold">{data.summary.hours.expected}</p>
-
                 </div>
 
-                
-
-                <div className="flex flex-col items-center space-y-2">
-
-                  <p className="text-sm text-gray-500">Trabalhado</p>
-
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-sm text-gray-500 mb-2 h-5">Trabalhado</p>
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-2">
                     <HourglassIcon className="w-6 h-6 text-amber-600" />
-
                   </div>
-
                   <p className="text-lg font-semibold">{data.summary.hours.worked}</p>
-
                 </div>
 
-                <div className="flex flex-col items-center space-y-2">
-
-                  <p className="text-sm text-gray-500">Saldo</p>
-
-                  <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
-
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-sm text-gray-500 mb-2 h-5">Saldo</p>
+                  <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center mb-2">
                     <TrendingDown className="w-6 h-6 text-red-600" />
-
                   </div>
-
-                  <p className={`text-lg font-semibold ${
-                    data.summary.hours.balance.startsWith('-') ? 'text-red-500' : 'text-green-500'
-                  }`}>{data.summary.hours.balance}</p>
-
+                  <p className="text-lg font-semibold">{data.summary.hours.balance}</p>
                 </div>
-
               </div>
-
             </div>
 
           </div>
