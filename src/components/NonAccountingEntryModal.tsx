@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { Calendar, DateObject } from "react-multi-date-picker";
 import { NonAccountingEntry } from '../types';
 import "react-multi-date-picker/styles/layouts/mobile.css";
 import "react-multi-date-picker/styles/colors/purple.css";
+import { formatDate } from '../utils/formatDate';
 
 const NON_ACCOUNTING_TYPES = [
   'Férias',
@@ -147,6 +148,10 @@ export const NonAccountingEntryModal = ({
             </div>
             <div className="mt-2 text-sm text-gray-500">
               {selectedDates.length} dia(s) selecionado(s)
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700">Data selecionada</label>
+              <span className="mt-1 text-gray-900">{selectedDates.length > 0 ? formatDate(selectedDates[0]) : 'Selecione uma data'}</span>
             </div>
           </div>
 

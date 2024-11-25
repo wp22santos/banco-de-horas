@@ -82,6 +82,7 @@ O calendário não estava sendo exibido no NonAccountingEntryModal quando o moda
 - Removida opção de editar lançamentos de turno, mantendo apenas a exclusão
 - Corrigido cálculo de horas previstas para usar a fórmula (160/total de dias) * dias a trabalhar
 - Melhorada exibição dos lançamentos não contábeis mostrando data, tipo e comentário
+- Padronizado formato de datas para dd/mm/yyyy em todo o sistema
 
 ### Removido
 

@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Trash2
 } from 'lucide-react';
+import { formatDate } from '../utils/formatDate';
 
 // Função auxiliar para calcular a duração de um turno
 const calculateDuration = (startTime: string, endTime: string) => {
@@ -248,7 +249,7 @@ export const MonthDetailView = () => {
                           <CalendarRange className="w-5 h-5 text-purple-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{entry.date}</p>
+                          <p className="font-medium text-gray-900">{formatDate(entry.date)}</p>
                           <div className="text-sm text-gray-600 space-y-1 mt-1">
                             <div className="flex items-center gap-4">
                               <p>
@@ -309,7 +310,7 @@ export const MonthDetailView = () => {
                           <Briefcase className="w-5 h-5 text-violet-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{entry.date}</p>
+                          <p className="font-medium text-gray-900">{formatDate(entry.date)}</p>
                           <div className="text-sm text-gray-600 space-y-1 mt-1">
                             <div className="flex items-center gap-4">
                               <p>
