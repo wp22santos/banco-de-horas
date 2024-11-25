@@ -103,7 +103,7 @@ export const NonAccountingEntryModal = ({
         month: entry.month || month,
         year: entry.year || year,
         comment: entry.comment,
-        user_id: entry.user_id
+        user_id: entry.user_id || 'default-user'  
       };
 
       await onSubmit(fullEntry);
