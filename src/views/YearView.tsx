@@ -126,7 +126,12 @@ const YearView = () => {
     refetchData 
   } = useYearData(currentYear);
   
-  const [selectedQuarter, setSelectedQuarter] = useState(1);
+  // Calcula o trimestre atual com base no mês
+  const getCurrentQuarter = (month: number) => {
+    return Math.ceil(month / 3);
+  };
+  
+  const [selectedQuarter, setSelectedQuarter] = useState(getCurrentQuarter(currentMonth));
   const { loading: quarterLoading, error: quarterError, data: quarterData, refetchData: refetchQuarterData } = useQuarterData(selectedQuarter, year);
 
   // Recarregar dados quando voltar da página do mês

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { Calendar as DatePicker, DateObject } from "react-multi-date-picker";
 import { NonAccountingEntry } from '../types';
@@ -43,12 +43,51 @@ export const NonAccountingEntryModal = ({
     setEntry(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleDateChange = (dates: any) => {
+    console.log('[Modal] Calendar onChange:', dates);
+    if (Array.isArray(dates) && dates.length > 0) {
+      const newDates = dates.map(date => new Date(date));
+      console.log('[Modal] Setting new dates:', newDates);
+      setSelectedDates(newDates);
+      
+      // Atualizar a data no entry quando uma data é selecionada
+      const firstDate = newDates[0];
+      const formattedDate = firstDate.toISOString().split('T')[0];
+      setEntry(prev => ({ 
+        ...prev, 
+        date: formattedDate,
+        days: newDates.length 
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      // Resetar o formulário quando abrir
+      setSelectedDates([]);
+      setEntry({
+        date: '',
+        type: 'Férias',
+        days: 1,
+        comment: '',
+        month: month,
+        year: year,
+        user_id: ''
+      });
+      setError(null);
+    }
+  }, [isOpen, month, year]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
+      if (selectedDates.length === 0) {
+        throw new Error('Selecione pelo menos uma data');
+      }
+
       const { valid, error } = await onValidate(entry);
       if (!valid) {
         setError(error || 'Dados inválidos');
@@ -56,33 +95,19 @@ export const NonAccountingEntryModal = ({
       }
 
       const fullEntry: Omit<NonAccountingEntry, 'id'> = {
-        date: entry.date || '',
-        type: entry.type || 'Férias',
-        days: entry.days || 1,
-        comment: entry.comment || '',
-        month: entry.month || month,
-        year: entry.year || year,
-        user_id: entry.user_id || '',
+        ...entry,
+        days: selectedDates.length,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
       await onSubmit(fullEntry);
       onClose();
-    } catch (err) {
-      setError('Erro ao salvar entrada');
+    } catch (err: any) {
+      setError(err.message);
       console.error(err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDateChange = (dates: any) => {
-    console.log('[Modal] Calendar onChange:', dates);
-    if (Array.isArray(dates)) {
-      const newDates = dates.map(date => new Date(date));
-      console.log('[Modal] Setting new dates:', newDates);
-      setSelectedDates(newDates);
     }
   };
 
@@ -96,7 +121,7 @@ export const NonAccountingEntryModal = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-md">
+      <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h3 className="text-lg font-semibold">Novo Não Contábil</h3>
           <button 
@@ -114,9 +139,9 @@ export const NonAccountingEntryModal = ({
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Datas</label>
-            <div className="border rounded-lg p-4" style={{ minHeight: '300px' }}>
+            <div className="border rounded-lg p-1 flex justify-center">
               <DatePicker
                 value={selectedDates}
                 onChange={handleDateChange}

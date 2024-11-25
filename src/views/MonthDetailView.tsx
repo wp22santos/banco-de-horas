@@ -26,6 +26,10 @@ import {
 } from 'lucide-react';
 
 import { formatDate } from '../utils/formatDate';
+import { formatDateWithDay } from '../utils/formatDateWithDay';
+import { calculateTotalTime } from '../utils/calculateTotalTime';
+
+
 
 
 
@@ -391,7 +395,7 @@ export const MonthDetailView = () => {
 
                         <div>
 
-                          <p className="font-medium text-gray-900">{formatDate(entry.date)}</p>
+                          <p className="font-medium text-gray-900">{formatDateWithDay(entry.date)}</p>
 
                           <div className="text-sm text-gray-600 space-y-1 mt-1">
 
@@ -510,28 +514,26 @@ export const MonthDetailView = () => {
                         </div>
 
                         <div>
-                          <p className="font-medium text-gray-900">{formatDate(entry.date)}</p>
+                          <p className="font-medium text-gray-900">{formatDateWithDay(entry.date)}</p>
                           <div className="text-sm text-gray-600 space-y-2 mt-2">
                             <p>
                               <span className="font-medium text-gray-700">Início:</span>{' '}
-                              {entry.start_time}
+                              {entry.start_time.substring(0, 5)}
                             </p>
                             <p>
                               <span className="font-medium text-gray-700">Fim:</span>{' '}
-                              {entry.end_time}
+                              {entry.end_time.substring(0, 5)}
                             </p>
-                            {false && (
-                              <p>
-                                <span className="font-medium text-gray-700">Noturno:</span>{' '}
-                                <span className="text-indigo-600 font-medium">
-                                  {''}
-                                </span>
-                              </p>
-                            )}
+                            <p>
+                              <span className="font-medium text-gray-700">Noturno:</span>{' '}
+                              <span>
+                                {entry.night_time.substring(0, 5)}
+                              </span>
+                            </p>
                             <p>
                               <span className="font-medium text-gray-700">Total:</span>{' '}
                               <span className="text-violet-600 font-medium">
-                                {''}
+                                {calculateTotalTime(entry.start_time, entry.end_time, entry.night_time)}
                               </span>
                             </p>
                           </div>
@@ -542,13 +544,9 @@ export const MonthDetailView = () => {
                       <div className="flex items-center gap-4">
 
                         {entry.comment && (
-
                           <span className="text-sm text-gray-500 max-w-[200px] truncate" title={entry.comment}>
-
                             {entry.comment}
-
                           </span>
-
                         )}
 
                         <div className="flex items-center">
