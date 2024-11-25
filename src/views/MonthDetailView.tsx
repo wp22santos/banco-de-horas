@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 import { useMonthData } from '../hooks/useMonthData';
 
@@ -12,25 +13,16 @@ import { NonAccountingEntryModal } from '../components/NonAccountingEntryModal';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 import { 
-
   Clock, 
-
   HourglassIcon, 
-
   TrendingDown, 
-
   CalendarDays,
-
   Plus,
-
   Briefcase,
-
   CalendarRange,
-
   ArrowLeft,
-
-  Trash2
-
+  Trash2,
+  LogOut
 } from 'lucide-react';
 
 import { formatDate } from '../utils/formatDate';
@@ -76,6 +68,8 @@ export const MonthDetailView = () => {
   const { month, year } = useParams();
 
   const { state } = useLocation();
+
+  const navigate = useNavigate();
 
   const currentDate = new Date();
 
@@ -207,6 +201,13 @@ export const MonthDetailView = () => {
 
 
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
+
+
   if (loading) {
 
     return (
@@ -271,21 +272,37 @@ export const MonthDetailView = () => {
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
 
-          <Link 
+          <div className="flex items-center justify-between mb-6">
 
-            to="/"
+            <Link 
 
-            className="flex items-center gap-2 text-white/80 hover:text-white mb-6"
+              to="/"
 
-          >
+              className="flex items-center gap-2 text-white/80 hover:text-white"
 
-            <ArrowLeft className="w-5 h-5" />
+            >
 
-            <span>Voltar</span>
+              <ArrowLeft className="w-5 h-5" />
 
-          </Link>
+              <span>Voltar</span>
 
+            </Link>
 
+            <button 
+
+              onClick={handleLogout}
+
+              className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+
+            >
+
+              <LogOut className="w-5 h-5" />
+
+              <span className="text-sm">Sair</span>
+
+            </button>
+
+          </div>
 
           <div className="bg-white rounded-2xl shadow-lg divide-y w-full max-w-[calc(100vw-2rem)] mx-auto">
 
