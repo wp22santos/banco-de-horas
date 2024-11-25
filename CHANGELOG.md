@@ -85,6 +85,38 @@ className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8"
 - Transição suave entre layouts mobile e desktop
 - Preservação da estrutura vertical dos elementos
 
+## [2024-01-10] - Melhorias de Layout e Responsividade
+
+### Ajustes
+1. Posicionamento do botão Sair:
+   - Aumentado espaçamento em relação ao topo
+   - Melhor separação dos trimestres
+
+2. Trimestres:
+   - Centralização dos botões
+   - Redução do padding lateral para melhor visualização
+   - Removida rolagem horizontal
+
+3. Cards de Informação:
+   - Reorganização para layout horizontal
+   - Melhor alinhamento dos ícones
+   - Centralização dos elementos
+   - Espaçamento consistente entre os cards
+
+### Código Atualizado
+```tsx
+// Botão Sair
+className="absolute right-6 top-4 mt-2"
+
+// Container dos Cards
+className="flex flex-wrap justify-center gap-6 w-full md:w-auto"
+```
+
+### Resultados
+- Layout mais limpo e organizado
+- Melhor experiência em dispositivos móveis
+- Elementos perfeitamente alinhados e centralizados
+
 ## [0.2.1] - 2024-03-26
 
 ### Fixed

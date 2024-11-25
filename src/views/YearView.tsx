@@ -127,9 +127,9 @@ const YearView = () => {
     <div className="min-h-screen bg-gray-50 relative">
       {/* Header with gradient */}
       <div className="bg-gradient-to-r from-violet-500 to-purple-500 rounded-b-[2rem]">
-        <div className="max-w-5xl mx-auto relative">
+        <div className="max-w-5xl mx-auto relative pt-6">
           {/* Sign Out Button */}
-          <div className="absolute right-6 top-6">
+          <div className="absolute right-6 top-4 mt-2">
             <button 
               onClick={handleLogout}
               className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
@@ -140,14 +140,14 @@ const YearView = () => {
           </div>
 
           {/* Trimester Selection */}
-          <div className="px-6 pt-6">
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+          <div className="px-6 pt-10">
+            <div className="flex justify-center gap-2 mb-4">
               {data?.trimesterData.map((tri) => (
                 <button
                   key={tri.id}
                   onClick={() => setSelectedTrimester(tri.id)}
                   disabled={loading}
-                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                     selectedTrimester === tri.id 
                       ? 'bg-white text-purple-700 shadow-lg' 
                       : 'bg-white/20 text-white hover:bg-white/30'
@@ -168,45 +168,41 @@ const YearView = () => {
                 </div>
               )}
 
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="flex-shrink-0">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex-shrink-0 text-center w-full md:w-auto md:text-left">
                   <h2 className="text-lg font-medium text-gray-900 mb-1">
                     {selectedData.months}
                   </h2>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-6 flex-1 justify-end">
-                  <div className="flex items-center gap-4">
+                <div className="flex flex-wrap justify-center gap-6 w-full md:w-auto">
+                  <div className="flex flex-col items-center gap-2">
                     <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
                       <Clock className="w-6 h-6 text-purple-600" />
                     </div>
-                    <div>
+                    <div className="text-center">
                       <p className="text-sm text-gray-600">Previsto</p>
                       <p className="font-semibold text-lg">{selectedData.previsto}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col items-center gap-2">
                     <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
                       <HourglassIcon className="w-6 h-6 text-blue-600" />
                     </div>
-                    <div>
+                    <div className="text-center">
                       <p className="text-sm text-gray-600">Trabalhado</p>
                       <p className="font-semibold text-lg">{selectedData.trabalhado}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col items-center gap-2">
                     <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
                       <TrendingDown className="w-6 h-6 text-red-600" />
                     </div>
-                    <div>
+                    <div className="text-center">
                       <p className="text-sm text-gray-600">Saldo</p>
-                      <p className={`font-semibold text-lg ${
-                        selectedData.saldo.startsWith('-') ? 'text-red-500' : 'text-green-500'
-                      }`}>
-                        {selectedData.saldo}
-                      </p>
+                      <p className="font-semibold text-lg text-red-500">{selectedData.saldo}</p>
                     </div>
                   </div>
                 </div>
