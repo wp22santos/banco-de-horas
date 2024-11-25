@@ -4,8 +4,6 @@ import {
   HourglassIcon, 
   TrendingDown, 
   Calendar, 
-  CheckCircle2, 
-  AlertCircle, 
   ChevronLeft, 
   ChevronRight,
   LogOut,
@@ -37,13 +35,7 @@ const MonthCard = ({ month, previsto, trabalhado, saldo, onClick, disabled }) =>
             <Calendar className="w-5 h-5 text-violet-500" />
             <h3 className="font-medium text-gray-900">{month}</h3>
           </div>
-          <div className={`${getStatusColor()}`}>
-            {parseFloat(saldo.replace('-', '')) === 0 ? (
-              <CheckCircle2 className="w-5 h-5" />
-            ) : (
-              <AlertCircle className="w-5 h-5" />
-            )}
-          </div>
+          <span className={`text-sm font-medium ${getStatusColor()}`}>{saldo}</span>
         </div>
       </div>
 
@@ -66,16 +58,6 @@ const MonthCard = ({ month, previsto, trabalhado, saldo, onClick, disabled }) =>
             <span className="text-sm text-gray-600">Trabalhado</span>
           </div>
           <span className="font-medium">{trabalhado}</span>
-        </div>
-
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
-              <TrendingDown className="w-4 h-4 text-red-600" />
-            </div>
-            <span className="text-sm text-gray-600">Saldo</span>
-          </div>
-          <span className={`font-medium ${getStatusColor()}`}>{saldo}</span>
         </div>
       </div>
     </button>
@@ -189,14 +171,14 @@ const YearView = () => {
           </div>
 
           {/* Quarter Selection */}
-          <div className="px-6 pt-10">
-            <div className="flex justify-center gap-2 mb-4">
+          <div className="px-4 sm:px-6 pt-10">
+            <div className="flex flex-wrap justify-center gap-2 mb-4">
               {quarters.map((quarter) => (
                 <button
                   key={quarter.id}
                   onClick={() => setSelectedQuarter(quarter.id)}
                   disabled={yearLoading || quarterLoading}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`text-center w-[calc(50%-0.5rem)] sm:w-auto sm:min-w-[90px] px-2 sm:px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     selectedQuarter === quarter.id 
                       ? 'bg-white text-purple-700 shadow-lg' 
                       : 'bg-white/20 text-white hover:bg-white/30'

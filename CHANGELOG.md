@@ -117,6 +117,18 @@ className="flex flex-wrap justify-center gap-6 w-full md:w-auto"
 - Melhor experiência em dispositivos móveis
 - Elementos perfeitamente alinhados e centralizados
 
+## [2024-01-10] - Melhorias na Interface
+
+### Changed
+- Removidos ícones de status dos cards de meses para uma interface mais limpa
+- Saldo do mês movido para o cabeçalho do card
+- Simplificado o layout dos cards mantendo apenas as seções de "Previsto" e "Trabalhado"
+
+### Design
+- Interface mais limpa e direta nos cards de meses
+- Mantida a indicação visual de saldo (verde/vermelho) no cabeçalho
+- Preservada a consistência visual com o resto da aplicação
+
 ## [2024-01-10] - Correção no Cálculo de Horas Previstas
 
 ### Problema
