@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { calculateHourBalance } from '../utils/calculations';
+import { useCache } from '../contexts/CacheContext';
 
 interface QuarterData {
   previsto: string;
@@ -12,16 +13,20 @@ export const useQuarterData = (quarter: number, year: number) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<QuarterData | null>(null);
+  const { getQuarterData, setQuarterData } = useCache();
 
   useEffect(() => {
     const fetchQuarterData = async () => {
       try {
+        // Verificar cache primeiro
+        const cachedData = getQuarterData(year, quarter);
+        if (cachedData) {
+          setData(cachedData);
+          return;
+        }
+
         setLoading(true);
         setError(null);
-
-        // Determinar os meses do trimestre
-        const startMonth = (quarter - 1) * 3 + 1;
-        const endMonth = startMonth + 2;
 
         // Buscar dados do usuário atual
         const session = await supabase.auth.getSession();
@@ -30,6 +35,10 @@ export const useQuarterData = (quarter: number, year: number) => {
           throw new Error('Usuário não autenticado');
         }
 
+        // Determinar os meses do trimestre
+        const startMonth = (quarter - 1) * 3 + 1;
+        const endMonth = startMonth + 2;
+        
         let totalExpectedMinutes = 0;
         let totalWorkedMinutes = 0;
 
@@ -45,7 +54,7 @@ export const useQuarterData = (quarter: number, year: number) => {
 
           if (workingDaysError) throw workingDaysError;
 
-          // Calcular horas previstas usando a mesma fórmula da página do mês
+          // Calcular horas previstas
           const totalDays = new Date(year, month, 0).getDate();
           const monthExpectedMinutes = Math.round((160 / totalDays) * workingDays * 60);
           totalExpectedMinutes += monthExpectedMinutes;
@@ -61,26 +70,34 @@ export const useQuarterData = (quarter: number, year: number) => {
 
           if (monthError) throw monthError;
 
-          totalWorkedMinutes += monthData?.total_worked_minutes || 0;
+          if (monthData?.total_worked_minutes) {
+            totalWorkedMinutes += monthData.total_worked_minutes;
+          }
         }
 
         // Converter minutos em formato HH:MM
         const formatHours = (minutes: number) => {
-          const hours = Math.floor(minutes / 60);
-          const mins = minutes % 60;
-          return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+          const hours = Math.floor(Math.abs(minutes) / 60);
+          const mins = Math.abs(minutes) % 60;
+          const sign = minutes < 0 ? '-' : '';
+          return `${sign}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
         };
 
         const previsto = formatHours(totalExpectedMinutes);
         const trabalhado = formatHours(totalWorkedMinutes);
         const saldo = calculateHourBalance(trabalhado, previsto);
 
-        setData({
+        const quarterData = {
           previsto,
           trabalhado,
           saldo
-        });
+        };
+
+        setData(quarterData);
+        setQuarterData(year, quarter, quarterData);
+
       } catch (err: any) {
+        console.error('Erro ao buscar dados do trimestre:', err);
         setError(err.message);
       } finally {
         setLoading(false);

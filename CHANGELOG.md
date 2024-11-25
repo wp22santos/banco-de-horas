@@ -134,6 +134,28 @@ Os valores de horas previstas, trabalhadas e saldo estavam inconsistentes entre 
    - useQuarterData.ts: atualizado para calcular corretamente as horas previstas por mês
 3. Agora todos os valores são consistentes em toda a aplicação
 
+## [2024-01-10] - Correção no Cálculo de Horas do Trimestre
+
+#### Problema
+O resumo do trimestre estava exibindo valores zerados (00:00) para todas as métricas (previsto, trabalhado e saldo).
+
+#### Sintomas
+- Todas as métricas do trimestre apareciam como "00:00"
+- O problema ocorreu após a tentativa de otimização com chamadas paralelas ao banco
+- O cache estava funcionando, mas os dados iniciais estavam incorretos
+
+#### Solução
+1. Removidas as chamadas paralelas que estavam causando problemas no cálculo
+2. Voltamos para o método sequencial de busca de dados que era mais confiável
+3. Melhorada a verificação dos dados mensais com checagem explícita
+4. Aprimorada a função formatHours para lidar corretamente com números negativos
+5. Mantida a funcionalidade de cache, mas com implementação simplificada
+
+#### Aprendizados
+- Nem sempre otimizações como chamadas paralelas resultam em melhor funcionamento
+- É importante manter um balanço entre performance e confiabilidade
+- O método sequencial, embora mais lento, garante maior consistência nos dados
+
 ## [0.2.1] - 2024-03-26
 
 ### Fixed
