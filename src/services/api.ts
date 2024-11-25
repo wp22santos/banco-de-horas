@@ -17,13 +17,6 @@ const extractMonthAndYear = (dateStr: string) => {
   return { month, year };
 };
 
-// Helper function to get previous day
-const getPreviousDay = (dateStr: string) => {
-  const date = new Date(dateStr);
-  date.setDate(date.getDate() - 1);
-  return date.toISOString().split('T')[0];
-};
-
 // Função auxiliar para calcular o tempo noturno (10min por hora entre 23h e 5h)
 const calculateNightTime = (startTime: string, endTime: string): string => {
   const start = new Date(`2000-01-01T${startTime}`);

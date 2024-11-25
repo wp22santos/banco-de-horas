@@ -7,14 +7,19 @@ interface CacheData {
   monthData: {
     [key: string]: any; // year-month -> data
   };
+  quarterData: {
+    [key: string]: any; // year-quarter -> data
+  };
 }
 
 interface CacheContextType {
   cache: CacheData;
   setYearData: (year: number, data: any) => void;
   setMonthData: (year: number, month: number, data: any) => void;
+  setQuarterData: (year: number, quarter: number, data: any) => void;
   getYearData: (year: number) => any;
   getMonthData: (year: number, month: number) => any;
+  getQuarterData: (year: number, quarter: number) => any;
   clearCache: () => void;
 }
 
@@ -24,6 +29,7 @@ export const CacheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [cache, setCache] = useState<CacheData>({
     yearData: {},
     monthData: {},
+    quarterData: {},
   });
 
   const setYearData = (year: number, data: any) => {
@@ -47,6 +53,17 @@ export const CacheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }));
   };
 
+  const setQuarterData = (year: number, quarter: number, data: any) => {
+    const key = `${year}-${quarter}`;
+    setCache(prev => ({
+      ...prev,
+      quarterData: {
+        ...prev.quarterData,
+        [key]: data
+      }
+    }));
+  };
+
   const getYearData = (year: number) => {
     return cache.yearData[year];
   };
@@ -56,10 +73,16 @@ export const CacheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return cache.monthData[key];
   };
 
+  const getQuarterData = (year: number, quarter: number) => {
+    const key = `${year}-${quarter}`;
+    return cache.quarterData[key];
+  };
+
   const clearCache = () => {
     setCache({
       yearData: {},
       monthData: {},
+      quarterData: {},
     });
   };
 
@@ -68,8 +91,10 @@ export const CacheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       cache,
       setYearData,
       setMonthData,
+      setQuarterData,
       getYearData,
       getMonthData,
+      getQuarterData,
       clearCache
     }}>
       {children}

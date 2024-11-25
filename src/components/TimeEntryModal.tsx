@@ -59,24 +59,24 @@ export const TimeEntryModal = ({
 
     // Validação em tempo real
     if (name === 'end_time' && formData.start_time && value) {
-      const { valid, error } = await onValidate(newData);
+      const { error } = await onValidate(newData);
       setError(error || null);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      const { valid, error } = await onValidate(formData);
-      if (!valid) throw new Error(error);
+    try {
+      const { error } = await onValidate(formData);
+      if (error) throw new Error(error);
 
       await onSubmit(formData);
       onClose();
     } catch (err: any) {
+      console.error('[Modal] Error:', err);
       setError(err.message);
     } finally {
       setLoading(false);

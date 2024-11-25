@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { TimeEntry, NonAccountingEntry } from '../types';
 import * as api from '../services/api';
@@ -82,7 +81,6 @@ export const useMonthData = (month: number, year: number) => {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<MonthData | null>(null);
   const [updateTrigger, setUpdateTrigger] = useState(0);
-  const navigate = useNavigate();
   const { getMonthData, setMonthData, clearCache } = useCache();
 
   const fetchMonthData = async () => {
@@ -226,7 +224,7 @@ export const useMonthData = (month: number, year: number) => {
   const deleteTimeEntry = async (id: number) => {
     try {
       await api.deleteTimeEntry(id);
-      clearCache(); // Limpar cache ao deletar entrada
+      clearCache(); // Limpar todo o cache ao deletar entrada
       setUpdateTrigger(prev => prev + 1); // Força atualização
     } catch (err: any) {
       throw new Error(err.message);
@@ -260,7 +258,7 @@ export const useMonthData = (month: number, year: number) => {
   const deleteNonAccountingEntry = async (id: number) => {
     try {
       await api.deleteNonAccountingEntry(id);
-      clearCache(); // Limpar cache ao deletar entrada
+      clearCache(); // Limpar todo o cache ao deletar entrada
       setUpdateTrigger(prev => prev + 1); // Força atualização
     } catch (err: any) {
       throw new Error(err.message);

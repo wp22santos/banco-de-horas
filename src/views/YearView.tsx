@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Clock, 
   HourglassIcon, 
@@ -8,14 +8,23 @@ import {
   ChevronRight,
   LogOut,
   Plus,
-  Loader2
+  AlertCircle
 } from 'lucide-react';
 import { useYearData } from '../hooks/useYearData';
 import { useQuarterData } from '../hooks/useQuarterData';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
-const MonthCard = ({ month, previsto, trabalhado, saldo, onClick, disabled }) => {
+interface MonthCardProps {
+  month: string;
+  previsto: string;
+  trabalhado: string;
+  saldo: string;
+  onClick: () => void;
+  disabled: boolean;
+}
+
+const MonthCard: React.FC<MonthCardProps> = ({ month, previsto, trabalhado, saldo, onClick, disabled }) => {
   const getStatusColor = () => {
     if (parseFloat(saldo.replace('-', '')) === 0) return 'text-green-500';
     return saldo.startsWith('-') ? 'text-red-500' : 'text-green-500';
@@ -113,11 +122,22 @@ const YearView = () => {
     error: yearError, 
     data: yearData, 
     handleMonthClick, 
-    handleYearChange 
+    handleYearChange,
+    refetchData 
   } = useYearData(currentYear);
   
   const [selectedQuarter, setSelectedQuarter] = useState(1);
-  const { loading: quarterLoading, error: quarterError, data: quarterData } = useQuarterData(selectedQuarter, year);
+  const { loading: quarterLoading, error: quarterError, data: quarterData, refetchData: refetchQuarterData } = useQuarterData(selectedQuarter, year);
+
+  // Recarregar dados quando voltar da página do mês
+  useEffect(() => {
+    const state = window.history.state;
+    if (state?.usr?.refresh) {
+      refetchData();
+      refetchQuarterData();
+    }
+  }, []);
+
   const navigate = useNavigate();
 
   const handleLogout = async () => {

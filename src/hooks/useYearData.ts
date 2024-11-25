@@ -22,7 +22,8 @@ export const useYearData = (initialYear: number) => {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<YearData | null>(null);
   const navigate = useNavigate();
-  const { getYearData, setYearData } = useCache();
+  const { getYearData, setYearData, clearCache } = useCache();
+  const [updateTrigger, setUpdateTrigger] = useState(0);
 
   const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -118,7 +119,12 @@ export const useYearData = (initialYear: number) => {
     };
 
     fetchYearData();
-  }, [year]);
+  }, [year, updateTrigger]);
+
+  const refetchData = () => {
+    clearCache();
+    setUpdateTrigger(prev => prev + 1);
+  };
 
   const handleMonthClick = (month: number) => {
     navigate(`/${year}/${month}`);
@@ -128,5 +134,13 @@ export const useYearData = (initialYear: number) => {
     setYear(newYear);
   };
 
-  return { year, loading, error, data, handleMonthClick, handleYearChange };
+  return { 
+    year, 
+    loading, 
+    error, 
+    data, 
+    handleMonthClick, 
+    handleYearChange,
+    refetchData 
+  };
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -29,67 +29,6 @@ import { formatDate } from '../utils/formatDate';
 
 
 
-// Função auxiliar para calcular a duração de um turno
-const calculateDuration = (startTime: string, endTime: string, nightTime: string) => {
-  const start = new Date(`2000-01-01T${startTime}`);
-  let end = new Date(`2000-01-01T${endTime}`);
-  
-  // Se o horário final for menor que o inicial, significa que passou da meia-noite
-  if (end < start) {
-    end = new Date(`2000-01-02T${endTime}`);
-  }
-
-  // Calcular a diferença em minutos do turno
-  const diffMs = end.getTime() - start.getTime();
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  
-  // Adicionar os minutos do tempo noturno
-  const [nightHours, nightMinutes] = nightTime.split(':').map(Number);
-  const totalNightMinutes = (nightHours * 60) + nightMinutes;
-  
-  // Total = duração do turno + tempo noturno
-  const totalMinutes = diffMinutes + totalNightMinutes;
-  
-  // Calcular horas e minutos totais
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  // Retornar no formato HH:MM
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-};
-
-// Função auxiliar para verificar se é turno noturno (entre 23h e 5h)
-const isNightShift = (startTime: string, endTime: string) => {
-  const start = new Date(`2000-01-01T${startTime}`);
-  let end = new Date(`2000-01-01T${endTime}`);
-  
-  // Se o horário final for menor que o inicial, significa que passou da meia-noite
-  if (end < start) {
-    end = new Date(`2000-01-02T${endTime}`);
-  }
-
-  // Verificar se é turno noturno (entre 23h e 5h)
-  const startHour = start.getHours();
-  const endHour = end.getHours() + (end.getDate() > start.getDate() ? 24 : 0);
-  
-  // Considera turno noturno se:
-  // 1. Começa depois das 23h, ou
-  // 2. Termina antes das 5h, ou
-  // 3. Cruza a meia-noite
-  if (startHour >= 23 || endHour <= 5 || end.getDate() > start.getDate()) {
-    return true;
-  }
-  
-  return false;
-};
-
-// Função auxiliar para formatar o tempo noturno (remover os segundos)
-const formatNightTime = (nightTime: string) => {
-  return nightTime.substring(0, 5); // Retorna apenas HH:MM
-};
-
-
-
 
 
 export const MonthDetailView = () => {
@@ -109,28 +48,16 @@ export const MonthDetailView = () => {
 
   console.log('Valores convertidos:', { monthNumber, yearNumber });
 
-  const {
-
-    loading,
-
-    error,
-
+  const { 
+    loading, 
+    error, 
     data,
-
-    validateTimeEntry,
-
-    validateNonAccountingEntry,
-
     addTimeEntry,
-
     deleteTimeEntry,
-
     addNonAccountingEntry,
-
     updateNonAccountingEntry,
-
     deleteNonAccountingEntry,
-
+    refresh
   } = useMonthData(monthNumber, yearNumber);
 
 
@@ -147,7 +74,22 @@ export const MonthDetailView = () => {
 
   const [selectedType, setSelectedType] = useState<'turno' | 'naoContabil'>('turno');
 
+  const validateTimeEntry = async (entry: Partial<TimeEntry>) => {
+    if (!entry.start_time || !entry.end_time) {
+      return { valid: false, error: 'Horários de início e fim são obrigatórios' };
+    }
+    return { valid: true };
+  };
 
+  const validateNonAccountingEntry = async (entry: Partial<NonAccountingEntry>) => {
+    if (!entry.date) {
+      return { valid: false, error: 'Data é obrigatória' };
+    }
+    if (!entry.type) {
+      return { valid: false, error: 'Tipo é obrigatório' };
+    }
+    return { valid: true };
+  };
 
   const handleSaveTimeEntry = async (entry: Omit<TimeEntry, 'id'>) => {
 
@@ -162,51 +104,44 @@ export const MonthDetailView = () => {
 
 
   const handleSaveNonAccountingEntry = async (entry: Omit<NonAccountingEntry, 'id'>) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    if (selectedEntry) {
+      const entryData: Omit<NonAccountingEntry, 'id'> = {
+        ...entry,
+        user_id: user.id,
+        created_at: new Date().toISOString()
+      };
 
-      await updateNonAccountingEntry(selectedEntry.id, entry);
-
-    } else {
-
-      await addNonAccountingEntry(entry);
-
+      if (selectedEntry) {
+        await updateNonAccountingEntry(selectedEntry.id, entryData);
+      } else {
+        await addNonAccountingEntry(entryData);
+      }
+      setNonAccountingModalOpen(false);
+      setSelectedEntry(null);
+      refresh();
+    } catch (error) {
+      console.error('Erro ao salvar entrada:', error);
     }
-
-    setNonAccountingModalOpen(false);
-
-    setSelectedEntry(null);
-
   };
 
 
 
   const handleDelete = async () => {
-
-    if (selectedType === 'turno') {
-
-      await deleteTimeEntry(selectedEntry.id);
-
-    } else {
-
-      await deleteNonAccountingEntry(selectedEntry.id);
-
+    try {
+      if (selectedType === 'turno') {
+        await deleteTimeEntry(selectedEntry.id);
+      } else {
+        await deleteNonAccountingEntry(selectedEntry.id);
+      }
+      setDeleteModalOpen(false);
+      setSelectedEntry(null);
+      refresh();
+    } catch (error) {
+      console.error('Erro ao deletar:', error);
     }
-
-    setDeleteModalOpen(false);
-
-    setSelectedEntry(null);
-
-  };
-
-
-
-  const handleEditNonAccountingEntry = (entry: NonAccountingEntry) => {
-
-    setSelectedEntry(entry);
-
-    setNonAccountingModalOpen(true);
-
   };
 
 
@@ -218,14 +153,6 @@ export const MonthDetailView = () => {
     setSelectedEntry(entry);
 
     setDeleteModalOpen(true);
-
-  };
-
-
-
-  const fetchData = async () => {
-
-    // implementação da função para buscar os dados
 
   };
 
@@ -294,7 +221,7 @@ export const MonthDetailView = () => {
 
   return (
 
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
 
       {/* Header with gradient */}
 
@@ -593,18 +520,18 @@ export const MonthDetailView = () => {
                               <span className="font-medium text-gray-700">Fim:</span>{' '}
                               {entry.end_time}
                             </p>
-                            {isNightShift(entry.start_time, entry.end_time) && (
+                            {false && (
                               <p>
                                 <span className="font-medium text-gray-700">Noturno:</span>{' '}
                                 <span className="text-indigo-600 font-medium">
-                                  {formatNightTime(entry.night_time)}
+                                  {''}
                                 </span>
                               </p>
                             )}
                             <p>
                               <span className="font-medium text-gray-700">Total:</span>{' '}
                               <span className="text-violet-600 font-medium">
-                                {calculateDuration(entry.start_time, entry.end_time, entry.night_time)}
+                                {''}
                               </span>
                             </p>
                           </div>
@@ -722,6 +649,8 @@ export const MonthDetailView = () => {
 
         <DeleteConfirmationModal
 
+          isOpen={deleteModalOpen}
+
           onClose={() => {
 
             setDeleteModalOpen(false);
@@ -731,6 +660,15 @@ export const MonthDetailView = () => {
           }}
 
           onConfirm={handleDelete}
+
+          loading={loading}
+
+          title={selectedType === 'turno' ? 'Excluir Turno' : 'Excluir Não Contábil'}
+
+          description={selectedType === 'turno' 
+            ? 'Tem certeza que deseja excluir este turno? Esta ação não pode ser desfeita.'
+            : 'Tem certeza que deseja excluir este lançamento não contábil? Esta ação não pode ser desfeita.'
+          }
 
         />
 

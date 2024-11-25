@@ -1,18 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { Calendar, DateObject } from "react-multi-date-picker";
+import { Calendar as DatePicker, DateObject } from "react-multi-date-picker";
 import { NonAccountingEntry } from '../types';
 import "react-multi-date-picker/styles/layouts/mobile.css";
 import "react-multi-date-picker/styles/colors/purple.css";
 import { formatDate } from '../utils/formatDate';
-
-const NON_ACCOUNTING_TYPES = [
-  'Férias',
-  'Feriado',
-  'Folga',
-  'Atestado',
-  'Outros'
-];
 
 interface NonAccountingEntryModalProps {
   isOpen: boolean;
@@ -34,74 +26,73 @@ export const NonAccountingEntryModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
-  const [formData, setFormData] = useState({
-    type: NON_ACCOUNTING_TYPES[0],
-    comment: ''
+  const [entry, setEntry] = useState<Partial<NonAccountingEntry>>({
+    date: '',
+    type: 'Férias',
+    days: 1,
+    comment: '',
+    month: month,
+    year: year,
+    user_id: ''
   });
-
-  useEffect(() => {
-    console.log('[Modal] isOpen changed:', isOpen);
-    if (isOpen) {
-      setFormData({
-        type: NON_ACCOUNTING_TYPES[0],
-        comment: ''
-      });
-      setSelectedDates([]);
-      setError(null);
-    }
-  }, [isOpen]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setEntry(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      setError(null);
-
-      if (selectedDates.length === 0) {
-        throw new Error('Selecione pelo menos uma data');
+      const { valid, error } = await onValidate(entry);
+      if (!valid) {
+        setError(error || 'Dados inválidos');
+        return;
       }
 
-      console.log('[Modal] Submitting dates:', selectedDates);
+      const fullEntry: Omit<NonAccountingEntry, 'id'> = {
+        date: entry.date || '',
+        type: entry.type || 'Férias',
+        days: entry.days || 1,
+        comment: entry.comment || '',
+        month: entry.month || month,
+        year: entry.year || year,
+        user_id: entry.user_id || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
-      // Criar um lançamento para cada data selecionada
-      for (const date of selectedDates) {
-        const entry = {
-          date: date.toISOString().split('T')[0],
-          type: formData.type,
-          days: 1,
-          comment: formData.comment,
-          month: date.getMonth() + 1,
-          year: date.getFullYear()
-        };
-
-        console.log('[Modal] Processing entry:', entry);
-
-        const { valid, error } = await onValidate(entry);
-        if (!valid) throw new Error(error);
-
-        await onSubmit(entry);
-      }
-
+      await onSubmit(fullEntry);
       onClose();
-    } catch (err: any) {
-      console.error('[Modal] Error:', err);
-      setError(err.message);
+    } catch (err) {
+      setError('Erro ao salvar entrada');
+      console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDateChange = (dates: any) => {
+    console.log('[Modal] Calendar onChange:', dates);
+    if (Array.isArray(dates)) {
+      const newDates = dates.map(date => new Date(date));
+      console.log('[Modal] Setting new dates:', newDates);
+      setSelectedDates(newDates);
     }
   };
 
   console.log('[Modal] Rendering with selectedDates:', selectedDates);
 
   if (!isOpen) return null;
+
+  const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+  const lastDay = new Date(year, month, 0).getDate();
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -126,24 +117,16 @@ export const NonAccountingEntryModal = ({
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Datas</label>
             <div className="border rounded-lg p-4" style={{ minHeight: '300px' }}>
-              <Calendar
+              <DatePicker
                 value={selectedDates}
-                onChange={(dates: any) => {
-                  console.log('[Modal] Calendar onChange:', dates);
-                  if (Array.isArray(dates)) {
-                    const newDates = dates.map(date => new Date(date));
-                    console.log('[Modal] Setting new dates:', newDates);
-                    setSelectedDates(newDates);
-                  }
-                }}
+                onChange={handleDateChange}
                 multiple
-                defaultValue={new DateObject({ year, month, day: 1 })}
                 currentDate={new DateObject({ year, month, day: 1 })}
-                format="DD/MM/YYYY"
-                weekDays={["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]}
-                months={["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]}
+                format="YYYY-MM-DD"
+                weekDays={weekDays}
+                months={months}
                 minDate={new DateObject({ year, month, day: 1 })}
-                maxDate={new DateObject({ year, month: month + 1, day: 0 })}
+                maxDate={new DateObject({ year, month, day: lastDay })}
               />
             </div>
             <div className="mt-2 text-sm text-gray-500">
@@ -159,15 +142,17 @@ export const NonAccountingEntryModal = ({
             <label className="text-sm font-medium text-gray-700">Tipo</label>
             <select
               name="type"
-              value={formData.type}
+              value={entry.type}
               onChange={handleChange}
               className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500"
               disabled={loading}
               required
             >
-              {NON_ACCOUNTING_TYPES.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
+              <option value="Férias">Férias</option>
+              <option value="Feriado">Feriado</option>
+              <option value="Folga">Folga</option>
+              <option value="Atestado">Atestado</option>
+              <option value="Outros">Outros</option>
             </select>
           </div>
 
@@ -176,7 +161,7 @@ export const NonAccountingEntryModal = ({
             <input
               type="text"
               name="comment"
-              value={formData.comment}
+              value={entry.comment}
               onChange={handleChange}
               className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500"
               disabled={loading}

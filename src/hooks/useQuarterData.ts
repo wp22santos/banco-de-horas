@@ -13,7 +13,13 @@ export const useQuarterData = (quarter: number, year: number) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<QuarterData | null>(null);
-  const { getQuarterData, setQuarterData } = useCache();
+  const { getQuarterData, setQuarterData, clearCache } = useCache();
+  const [updateTrigger, setUpdateTrigger] = useState(0);
+
+  const refetchData = () => {
+    clearCache();
+    setUpdateTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     const fetchQuarterData = async () => {
@@ -105,7 +111,7 @@ export const useQuarterData = (quarter: number, year: number) => {
     };
 
     fetchQuarterData();
-  }, [quarter, year]);
+  }, [quarter, year, updateTrigger]);
 
-  return { loading, error, data };
+  return { loading, error, data, refetchData };
 };
