@@ -38,6 +38,10 @@ export const TimeEntryModal = ({
         initialDate.setDate(today.getDate());
       }
 
+      // Ajustar para o fuso horário local antes de converter para string
+      const offset = initialDate.getTimezoneOffset();
+      initialDate.setMinutes(initialDate.getMinutes() - offset);
+
       setFormData({
         date: initialDate.toISOString().split('T')[0],
         start_time: '',

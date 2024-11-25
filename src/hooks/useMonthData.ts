@@ -30,10 +30,35 @@ const calculateWorkedHours = (entries: TimeEntry[]) => {
 
   entries.forEach(entry => {
     const start = new Date(`2000-01-01T${entry.start_time}`);
-    const end = new Date(`2000-01-01T${entry.end_time}`);
-    // Calculando a diferença em minutos incluindo os segundos
+    let end = new Date(`2000-01-01T${entry.end_time}`);
+    
+    // Se o horário final for menor que o inicial, significa que passou da meia-noite
+    if (end < start) {
+      end = new Date(`2000-01-02T${entry.end_time}`);
+    }
+    
+    // Calculando a diferença em minutos
     const diffMinutes = Math.round((end.getTime() - start.getTime()) / 1000 / 60);
-    totalMinutes += diffMinutes;
+    
+    // Calculando minutos adicionais noturnos (20% a mais para horas entre 22h e 5h)
+    const startHour = start.getHours();
+    let endHour = end.getHours();
+    if (end.getDate() > start.getDate()) {
+      endHour = endHour + 24;
+    }
+
+    let nightlyMinutes = 0;
+    for (let hour = startHour; hour < endHour; hour++) {
+      const currentHour = hour % 24;
+      if (currentHour >= 22 || currentHour < 5) {
+        nightlyMinutes += 60;
+      }
+    }
+
+    // Adiciona 20% do tempo noturno como adicional
+    const nightlyBonus = Math.round(nightlyMinutes * 0.2);
+    
+    totalMinutes += diffMinutes + nightlyBonus;
   });
 
   const hours = Math.floor(totalMinutes / 60);
@@ -42,7 +67,7 @@ const calculateWorkedHours = (entries: TimeEntry[]) => {
 };
 
 const calculateExpectedHours = (workingDays: number, month: number, year: number) => {
-  // Calcula o total de dias no mês
+  // Calcula o total de dias no mês (month já está em base 1)
   const totalDays = new Date(year, month, 0).getDate();
   
   // Calcula as horas previstas usando a fórmula (160/total de dias) * dias a trabalhar
@@ -67,6 +92,7 @@ const calculateHourBalance = (worked: string, expected: string) => {
 
 // Função para calcular o número total de dias no mês
 const getDaysInMonth = (month: number, year: number) => {
+  // month já está em base 1 (1-12)
   return new Date(year, month, 0).getDate();
 };
 
@@ -80,23 +106,25 @@ export const useMonthData = (month: number, year: number) => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('Iniciando fetchMonthData para:', { month, year });
 
-      console.log('[Hook] Iniciando fetchMonthData:', { month, year });
+      // Busca as entradas do mês
+      const [timeEntriesResponse, nonAccountingEntriesResponse] = await Promise.all([
+        api.getTimeEntries(month, year),
+        api.getNonAccountingEntries(month, year),
+      ]);
 
-      // Buscar entradas de tempo
-      const { data: timeEntries, error: timeError } = await api.getTimeEntries(month, year);
-      console.log('[Hook] Resposta getTimeEntries:', { timeEntries, timeError });
+      console.log('Respostas obtidas:', {
+        timeEntries: timeEntriesResponse.data,
+        nonAccounting: nonAccountingEntriesResponse.data
+      });
 
-      if (timeError) throw timeError;
-
-      // Buscar entradas não contábeis
-      const { data: nonAccountingEntries, error: nonAccountingError } = await api.getNonAccountingEntries(month, year);
-      console.log('[Hook] Resposta getNonAccountingEntries:', { nonAccountingEntries, nonAccountingError });
-
-      if (nonAccountingError) throw nonAccountingError;
+      if (timeEntriesResponse.error) throw timeEntriesResponse.error;
+      if (nonAccountingEntriesResponse.error) throw nonAccountingEntriesResponse.error;
 
       // Calcular dias não contábeis
-      const nonAccountingDays = nonAccountingEntries?.reduce((acc, entry) => acc + entry.days, 0) || 0;
+      const nonAccountingDays = nonAccountingEntriesResponse.data?.reduce((acc, entry) => acc + entry.days, 0) || 0;
       console.log('[Hook] Dias não contábeis calculados:', nonAccountingDays);
 
       // Calcular total de dias no mês
@@ -104,7 +132,7 @@ export const useMonthData = (month: number, year: number) => {
       const workingDays = totalDays - nonAccountingDays;
 
       // Calcular horas
-      const workedHours = calculateWorkedHours(timeEntries || []);
+      const workedHours = calculateWorkedHours(timeEntriesResponse.data || []);
       const expectedHours = calculateExpectedHours(workingDays, month, year);
       const balance = calculateHourBalance(workedHours, expectedHours);
 
@@ -122,8 +150,8 @@ export const useMonthData = (month: number, year: number) => {
           },
         },
         entries: {
-          turno: timeEntries || [],
-          naoContabil: nonAccountingEntries || [],
+          turno: timeEntriesResponse.data || [],
+          naoContabil: nonAccountingEntriesResponse.data || [],
         },
       };
 

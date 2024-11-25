@@ -30,36 +30,65 @@ import { formatDate } from '../utils/formatDate';
 
 
 // Função auxiliar para calcular a duração de um turno
-
-const calculateDuration = (startTime: string, endTime: string) => {
-
+const calculateDuration = (startTime: string, endTime: string, nightTime: string) => {
   const start = new Date(`2000-01-01T${startTime}`);
-
   let end = new Date(`2000-01-01T${endTime}`);
-
   
-
-  // Se o horário final for menor que o inicial, adicionar 1 dia
-
+  // Se o horário final for menor que o inicial, significa que passou da meia-noite
   if (end < start) {
-
     end = new Date(`2000-01-02T${endTime}`);
-
   }
 
+  // Calcular a diferença em minutos do turno
+  const diffMs = end.getTime() - start.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  
+  // Adicionar os minutos do tempo noturno
+  const [nightHours, nightMinutes] = nightTime.split(':').map(Number);
+  const totalNightMinutes = (nightHours * 60) + nightMinutes;
+  
+  // Total = duração do turno + tempo noturno
+  const totalMinutes = diffMinutes + totalNightMinutes;
+  
+  // Calcular horas e minutos totais
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
 
-
-  const diffMinutes = Math.round((end.getTime() - start.getTime()) / 1000 / 60);
-
-  const hours = Math.floor(diffMinutes / 60);
-
-  const minutes = diffMinutes % 60;
-
-
-
+  // Retornar no formato HH:MM
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-
 };
+
+// Função auxiliar para verificar se é turno noturno (entre 23h e 5h)
+const isNightShift = (startTime: string, endTime: string) => {
+  const start = new Date(`2000-01-01T${startTime}`);
+  let end = new Date(`2000-01-01T${endTime}`);
+  
+  // Se o horário final for menor que o inicial, significa que passou da meia-noite
+  if (end < start) {
+    end = new Date(`2000-01-02T${endTime}`);
+  }
+
+  // Verificar se é turno noturno (entre 23h e 5h)
+  const startHour = start.getHours();
+  const endHour = end.getHours() + (end.getDate() > start.getDate() ? 24 : 0);
+  
+  // Considera turno noturno se:
+  // 1. Começa depois das 23h, ou
+  // 2. Termina antes das 5h, ou
+  // 3. Cruza a meia-noite
+  if (startHour >= 23 || endHour <= 5 || end.getDate() > start.getDate()) {
+    return true;
+  }
+  
+  return false;
+};
+
+// Função auxiliar para formatar o tempo noturno (remover os segundos)
+const formatNightTime = (nightTime: string) => {
+  return nightTime.substring(0, 5); // Retorna apenas HH:MM
+};
+
+
 
 
 
@@ -73,11 +102,12 @@ export const MonthDetailView = () => {
 
   const currentDate = new Date();
 
-  const monthNumber = parseInt(month || (currentDate.getMonth() + 1).toString());
+  console.log('Parâmetros da URL:', { month, year });
 
+  const monthNumber = parseInt(month || (currentDate.getMonth() + 1).toString());
   const yearNumber = parseInt(year || currentDate.getFullYear().toString());
 
-
+  console.log('Valores convertidos:', { monthNumber, yearNumber });
 
   const {
 
@@ -553,45 +583,31 @@ export const MonthDetailView = () => {
                         </div>
 
                         <div>
-
                           <p className="font-medium text-gray-900">{formatDate(entry.date)}</p>
-
-                          <div className="text-sm text-gray-600 space-y-1 mt-1">
-
-                            <div className="flex items-center gap-4">
-
+                          <div className="text-sm text-gray-600 space-y-2 mt-2">
+                            <p>
+                              <span className="font-medium text-gray-700">Início:</span>{' '}
+                              {entry.start_time}
+                            </p>
+                            <p>
+                              <span className="font-medium text-gray-700">Fim:</span>{' '}
+                              {entry.end_time}
+                            </p>
+                            {isNightShift(entry.start_time, entry.end_time) && (
                               <p>
-
-                                <span className="font-medium text-gray-700">Início:</span>{' '}
-
-                                {entry.start_time}
-
-                              </p>
-
-                              <p>
-
-                                <span className="font-medium text-gray-700">Fim:</span>{' '}
-
-                                {entry.end_time}
-
-                              </p>
-
-                              <p>
-
-                                <span className="font-medium text-gray-700">Duração:</span>{' '}
-
-                                <span className="text-violet-600 font-medium">
-
-                                  {calculateDuration(entry.start_time, entry.end_time)}
-
+                                <span className="font-medium text-gray-700">Noturno:</span>{' '}
+                                <span className="text-indigo-600 font-medium">
+                                  {formatNightTime(entry.night_time)}
                                 </span>
-
                               </p>
-
-                            </div>
-
+                            )}
+                            <p>
+                              <span className="font-medium text-gray-700">Total:</span>{' '}
+                              <span className="text-violet-600 font-medium">
+                                {calculateDuration(entry.start_time, entry.end_time, entry.night_time)}
+                              </span>
+                            </p>
                           </div>
-
                         </div>
 
                       </div>

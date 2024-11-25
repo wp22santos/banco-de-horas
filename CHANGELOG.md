@@ -159,3 +159,23 @@ className="flex flex-wrap justify-center gap-6 w-full md:w-auto"
 - Melhoria na experiência do usuário
 - Calendário funcionando corretamente para seleção de múltiplas datas
 - Interface mais limpa e consistente com o design do sistema
+
+## [2024-04-29] - Erro na Busca de Turnos com Filtro de Data
+
+### Problema
+Tentativa de melhorar a busca de turnos que passam da meia-noite usando filtros de data causou erro na API do Supabase.
+
+### Sintomas
+- Erro ao buscar time entries: `invalid input syntax for type time: "start_time"`
+- Requisição retornando status 400 (Bad Request)
+- Query tentando comparar campos de hora diretamente não é suportada pelo Postgres
+
+### Solução
+1. Mantido o filtro original por mês/ano que já funcionava corretamente
+2. Turnos que passam da meia-noite são tratados corretamente pela lógica de criação de duas entradas
+3. Removida tentativa de usar comparação direta entre campos de hora na query
+
+### Aprendizados
+1. Nem todas as operações SQL são suportadas diretamente pelo Postgres/Supabase
+2. A solução mais simples (filtro por mês/ano) já era suficiente
+3. Importante testar queries complexas antes de implementar

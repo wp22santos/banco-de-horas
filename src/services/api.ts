@@ -4,190 +4,144 @@ import { TimeEntry, NonAccountingEntry } from '../types';
 // Função auxiliar para verificar autenticação
 const checkAuth = async () => {
   const session = await supabase.auth.getSession();
-  console.log('[API] Sessão atual:', session);
-
   if (!session.data.session?.user?.id) {
     throw new Error('Usuário não autenticado');
   }
-
   return session.data.session.user.id;
 };
 
 // Função auxiliar para extrair mês e ano de uma data
-const extractMonthAndYear = (date: string) => {
-  const [year, month] = date.split('-').map(Number);
+const extractMonthAndYear = (dateStr: string) => {
+  // A data vem no formato YYYY-MM-DD e deve ser mantida como está
+  const [year, month] = dateStr.split('-').map(Number);
   return { month, year };
 };
 
-// Time Entries
-export const getTimeEntries = async (month: number, year: number) => {
-  console.log('[API] Buscando time entries:', { month, year });
-  
-  const userId = await checkAuth();
-  console.log('[API] User ID:', userId);
+// Helper function to get previous day
+const getPreviousDay = (dateStr: string) => {
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() - 1);
+  return date.toISOString().split('T')[0];
+};
 
-  // Primeiro, vamos verificar se existem entradas sem filtros
-  const allEntries = await supabase
-    .from('time_entries')
-    .select('*')
-    .eq('user_id', userId);
-    
-  console.log('[API] Detalhes de todas as entradas:', allEntries.data?.map(entry => ({
-    id: entry.id,
-    date: entry.date,
-    month: entry.month,
-    year: entry.year,
-    start_time: entry.start_time,
-    end_time: entry.end_time
-  })));
-
-  const response = await supabase
-    .from('time_entries')
-    .select('*')
-    .eq('month', month)
-    .eq('year', year)
-    .eq('user_id', userId)
-    .order('date', { ascending: true });
-    
-  console.log('[API] Detalhes das entradas filtradas:', response.data?.map(entry => ({
-    id: entry.id,
-    date: entry.date,
-    month: entry.month,
-    year: entry.year,
-    start_time: entry.start_time,
-    end_time: entry.end_time
-  })));
-    
-  console.log('[API] Query completa:', {
-    month,
-    year,
-    userId,
-    data: response.data,
-    error: response.error
-  });
+// Função auxiliar para calcular o tempo noturno (10min por hora entre 23h e 5h)
+const calculateNightTime = (startTime: string, endTime: string): string => {
+  const start = new Date(`2000-01-01T${startTime}`);
+  let end = new Date(`2000-01-01T${endTime}`);
   
-  if (response.error) {
-    console.error('[API] Erro ao buscar time entries:', response.error);
-    throw response.error;
+  if (end < start) {
+    end = new Date(`2000-01-02T${endTime}`);
   }
+
+  const startHour = start.getHours();
+  let endHour = end.getHours();
+  if (end.getDate() > start.getDate()) {
+    endHour = endHour + 24;
+  }
+
+  let horasNoturnas = 0;
   
-  return response;
+  // Contar horas cheias entre 23h e 5h
+  for (let hour = startHour; hour < endHour; hour++) {
+    const currentHour = hour % 24;
+    // Só conta se for hora cheia entre 23h e 5h
+    if (currentHour >= 23 || currentHour < 5) {
+      horasNoturnas++;
+    }
+  }
+
+  // Cada hora noturna vale 10 minutos
+  const totalMinutos = horasNoturnas * 10;
+
+  // Retornar no formato HH:MM:SS
+  const hours = Math.floor(totalMinutos / 60);
+  const minutes = totalMinutos % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+};
+
+// Time Entries
+export const getTimeEntries = async (month: number | string, year: number | string) => {
+  // Garantir que month e year são números
+  const monthNumber = typeof month === 'string' ? parseInt(month) : month;
+  const yearNumber = typeof year === 'string' ? parseInt(year) : year;
+  
+  console.log('Buscando entradas para:', { monthNumber, yearNumber });
+  
+  try {
+    const userId = await checkAuth();
+
+    const response = await supabase
+      .from('time_entries')
+      .select('*')
+      .eq('month', monthNumber)
+      .eq('year', yearNumber)
+      .eq('user_id', userId)
+      .order('date', { ascending: true });
+    
+    console.log('Entradas encontradas:', response.data);
+    
+    if (response.error) {
+      throw response.error;
+    }
+    
+    return response;
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const createTimeEntry = async (entry: Omit<TimeEntry, 'id'>) => {
-  console.log('[API] Criando time entry:', entry);
+  console.log('Data original:', entry.date);
   
   const userId = await checkAuth();
-  console.log('[API] User ID para criação:', userId);
-
-  const { month, year } = extractMonthAndYear(entry.date);
+  const date = entry.date;
   
-  // Se o horário final for menor que o inicial, criar duas entradas
-  const startTime = new Date(`2000-01-01T${entry.start_time}`);
-  const endTime = new Date(`2000-01-01T${entry.end_time}`);
+  const { month, year } = extractMonthAndYear(date);
+  console.log('Mês e ano extraídos:', { month, year });
   
-  if (endTime < startTime) {
-    // Primeira entrada: do horário inicial até 23:59:59
-    const firstEntry = {
-      ...entry,
-      end_time: '23:59:59',
-      user_id: userId,
-      month,
-      year
-    };
-
-    // Segunda entrada: da meia-noite até o horário final
-    const nextDay = new Date(entry.date);
-    nextDay.setDate(nextDay.getDate() + 1);
-    const { month: nextMonth, year: nextYear } = extractMonthAndYear(nextDay.toISOString().split('T')[0]);
-
-    const secondEntry = {
-      ...entry,
-      date: nextDay.toISOString().split('T')[0],
-      start_time: '00:00:00',
-      user_id: userId,
-      month: nextMonth,
-      year: nextYear
-    };
-
-    // Inserir as duas entradas
-    const { error: error1 } = await supabase
-      .from('time_entries')
-      .insert([firstEntry]);
-
-    if (error1) {
-      console.error('[API] Erro ao criar primeira entrada:', error1);
-      throw error1;
-    }
-
-    const { data: data2, error: error2 } = await supabase
-      .from('time_entries')
-      .insert([secondEntry])
-      .select()
-      .single();
-
-    if (error2) {
-      console.error('[API] Erro ao criar segunda entrada:', error2);
-      throw error2;
-    }
-
-    return data2;
-  }
+  // Calcular o tempo noturno
+  const nightTime = calculateNightTime(entry.start_time, entry.end_time);
   
-  // Se não passar da meia-noite, criar apenas uma entrada normalmente
+  // Criar uma única entrada, independente se passa da meia-noite ou não
   const { data, error } = await supabase
     .from('time_entries')
     .insert([{
       ...entry,
+      date,
       user_id: userId,
       month,
-      year
+      year,
+      night_time: nightTime
     }])
     .select()
     .single();
 
-  console.log('[API] Dados inseridos:', {
-    entry,
-    userId,
-    month,
-    year,
-    response: { data, error }
-  });
+  console.log('Entry criada:', data);
 
   if (error) {
-    console.error('[API] Erro ao criar time entry:', error);
     throw error;
   }
-  return data;
+
+  return { data, error };
 };
 
 export const updateTimeEntry = async (id: number, entry: Partial<TimeEntry>) => {
-  console.log('[API] Atualizando time entry:', { id, entry });
-  
-  await checkAuth();
-
-  const updateData: any = { ...entry };
-  if (entry.date) {
-    updateData.month = new Date(entry.date).getMonth() + 1;
-    updateData.year = new Date(entry.date).getFullYear();
+  // Se os horários foram atualizados, recalcular o tempo noturno
+  if (entry.start_time && entry.end_time) {
+    entry.night_time = calculateNightTime(entry.start_time, entry.end_time);
   }
 
   const { error } = await supabase
     .from('time_entries')
-    .update(updateData)
+    .update(entry)
     .eq('id', id);
 
-  console.log('[API] Resposta updateTimeEntry:', { error });
-
   if (error) {
-    console.error('[API] Erro ao atualizar time entry:', error);
     throw error;
   }
 };
 
 export const deleteTimeEntry = async (id: number) => {
-  console.log('[API] Deletando time entry:', { id });
-  
   await checkAuth();
 
   const { error } = await supabase
@@ -195,28 +149,19 @@ export const deleteTimeEntry = async (id: number) => {
     .delete()
     .eq('id', id);
 
-  console.log('[API] Resposta deleteTimeEntry:', { error });
-
   if (error) {
-    console.error('[API] Erro ao deletar time entry:', error);
     throw error;
   }
 };
 
 // Função para corrigir entradas com mês incorreto (ambas as tabelas)
 export const fixAllEntries = async () => {
-  console.log('[API] Iniciando correção de todas as entradas...');
-  
-  const userId = await checkAuth();
-  
   // Corrigir time entries
   const { data: timeEntries, error: timeError } = await supabase
     .from('time_entries')
-    .select('*')
-    .eq('user_id', userId);
+    .select('*');
     
   if (timeError) {
-    console.error('[API] Erro ao buscar time entries:', timeError);
     throw timeError;
   }
   
@@ -224,15 +169,13 @@ export const fixAllEntries = async () => {
     const { month: correctMonth, year: correctYear } = extractMonthAndYear(entry.date);
     
     if (entry.month !== correctMonth || entry.year !== correctYear) {
-      console.log(`[API] Corrigindo time entry ${entry.id}: data ${entry.date}, mês ${entry.month}->${correctMonth}, ano ${entry.year}->${correctYear}`);
-      
       const { error: updateError } = await supabase
         .from('time_entries')
         .update({ month: correctMonth, year: correctYear })
         .eq('id', entry.id);
         
       if (updateError) {
-        console.error(`[API] Erro ao atualizar time entry ${entry.id}:`, updateError);
+        throw updateError;
       }
     }
   }
@@ -240,11 +183,9 @@ export const fixAllEntries = async () => {
   // Corrigir non-accounting entries
   const { data: nonAccountingEntries, error: nonAccountingError } = await supabase
     .from('non_accounting_entries')
-    .select('*')
-    .eq('user_id', userId);
+    .select('*');
     
   if (nonAccountingError) {
-    console.error('[API] Erro ao buscar non-accounting entries:', nonAccountingError);
     throw nonAccountingError;
   }
   
@@ -252,62 +193,50 @@ export const fixAllEntries = async () => {
     const { month: correctMonth, year: correctYear } = extractMonthAndYear(entry.date);
     
     if (entry.month !== correctMonth || entry.year !== correctYear) {
-      console.log(`[API] Corrigindo non-accounting entry ${entry.id}: data ${entry.date}, mês ${entry.month}->${correctMonth}, ano ${entry.year}->${correctYear}`);
-      
       const { error: updateError } = await supabase
         .from('non_accounting_entries')
         .update({ month: correctMonth, year: correctYear })
         .eq('id', entry.id);
         
       if (updateError) {
-        console.error(`[API] Erro ao atualizar non-accounting entry ${entry.id}:`, updateError);
+        throw updateError;
       }
     }
   }
-  
-  console.log('[API] Correção de todas as entradas finalizada');
 };
 
 // Non-Accounting Entries
-export const getNonAccountingEntries = async (month: number, year: number) => {
-  console.log('[API] Buscando non-accounting entries:', { month, year });
+export const getNonAccountingEntries = async (month: number | string, year: number | string) => {
+  // Garantir que month e year são números
+  const monthNumber = typeof month === 'string' ? parseInt(month) : month;
+  const yearNumber = typeof year === 'string' ? parseInt(year) : year;
   
-  await checkAuth();
-
-  // Primeiro, busca sem filtros para verificar todos os registros
-  const allEntries = await supabase
-    .from('non_accounting_entries')
-    .select('*')
-    .order('date', { ascending: true });
-
-  // Log dos dados brutos
-  console.log('[API] Dados brutos dos registros:', JSON.stringify(allEntries.data, null, 2));
-
-  // Agora busca com os filtros
-  const response = await supabase
-    .from('non_accounting_entries')
-    .select('*')
-    .eq('month', month)
-    .eq('year', year)
-    .order('date', { ascending: true });
-    
-  console.log('[API] Resposta filtrada:', JSON.stringify(response.data, null, 2));
-  console.log('[API] Parâmetros do filtro:', { month, year });
+  console.log('Buscando entradas não contábeis para:', { monthNumber, yearNumber });
   
-  if (response.error) {
-    console.error('[API] Erro ao buscar non-accounting entries:', response.error);
-    throw response.error;
+  try {
+    const userId = await checkAuth();
+
+    const { data, error } = await supabase
+      .from('non_accounting_entries')
+      .select('*')
+      .eq('month', monthNumber)
+      .eq('year', yearNumber)
+      .eq('user_id', userId)
+      .order('date', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return { data, error };
+  } catch (error) {
+    throw error;
   }
-  
-  return response;
 };
 
 export const createNonAccountingEntry = async (entry: Omit<NonAccountingEntry, 'id'>) => {
-  console.log('[API] Criando non-accounting entry:', entry);
-  
   const userId = await checkAuth();
-  console.log('[API] User ID para criação:', userId);
-
+  
   const { month, year } = extractMonthAndYear(entry.date);
   
   const { data, error } = await supabase
@@ -321,24 +250,13 @@ export const createNonAccountingEntry = async (entry: Omit<NonAccountingEntry, '
     .select()
     .single();
 
-  console.log('[API] Dados inseridos:', {
-    entry,
-    userId,
-    month,
-    year,
-    response: { data, error }
-  });
-
   if (error) {
-    console.error('[API] Erro ao criar non-accounting entry:', error);
     throw error;
   }
   return data;
 };
 
 export const updateNonAccountingEntry = async (id: number, entry: Partial<NonAccountingEntry>) => {
-  console.log('[API] Atualizando non-accounting entry:', { id, entry });
-  
   await checkAuth();
 
   const updateData: any = { ...entry };
@@ -352,17 +270,12 @@ export const updateNonAccountingEntry = async (id: number, entry: Partial<NonAcc
     .update(updateData)
     .eq('id', id);
 
-  console.log('[API] Resposta updateNonAccountingEntry:', { error });
-
   if (error) {
-    console.error('[API] Erro ao atualizar non-accounting entry:', error);
     throw error;
   }
 };
 
 export const deleteNonAccountingEntry = async (id: number) => {
-  console.log('[API] Deletando non-accounting entry:', { id });
-  
   await checkAuth();
 
   const { error } = await supabase
@@ -370,10 +283,7 @@ export const deleteNonAccountingEntry = async (id: number) => {
     .delete()
     .eq('id', id);
 
-  console.log('[API] Resposta deleteNonAccountingEntry:', { error });
-
   if (error) {
-    console.error('[API] Erro ao deletar non-accounting entry:', error);
     throw error;
   }
 };
