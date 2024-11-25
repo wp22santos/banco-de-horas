@@ -83,6 +83,7 @@ const MonthCard = ({ month, previsto, trabalhado, saldo, onClick, disabled }) =>
 
 const YearView = () => {
   const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
   const { 
     year, 
     loading, 
@@ -101,7 +102,7 @@ const YearView = () => {
   };
 
   const handleNewEntry = () => {
-    navigate('/entries/new');
+    navigate(`/${currentYear}/${currentMonth}`, { state: { openTimeModal: true } });
   };
 
   if (error) {

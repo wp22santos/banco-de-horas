@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 
 import { useMonthData } from '../hooks/useMonthData';
 
@@ -75,6 +75,8 @@ export const MonthDetailView = () => {
 
   const { month, year } = useParams();
 
+  const { state } = useLocation();
+
   const currentDate = new Date();
 
   const monthNumber = parseInt(month || (currentDate.getMonth() + 1).toString());
@@ -109,7 +111,9 @@ export const MonthDetailView = () => {
 
 
 
-  const [timeModalOpen, setTimeModalOpen] = useState(false);
+  // Initialize timeModalOpen based on navigation state
+
+  const [timeModalOpen, setTimeModalOpen] = useState(state?.openTimeModal || false);
 
   const [nonAccountingModalOpen, setNonAccountingModalOpen] = useState(false);
 
