@@ -18,6 +18,23 @@ import {
   Edit
 } from 'lucide-react';
 
+// Função auxiliar para calcular a duração de um turno
+const calculateDuration = (startTime: string, endTime: string) => {
+  const start = new Date(`2000-01-01T${startTime}`);
+  let end = new Date(`2000-01-01T${endTime}`);
+  
+  // Se o horário final for menor que o inicial, adicionar 1 dia
+  if (end < start) {
+    end = new Date(`2000-01-02T${endTime}`);
+  }
+
+  const diffMinutes = Math.round((end.getTime() - start.getTime()) / 1000 / 60);
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = diffMinutes % 60;
+
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
 export const MonthDetailView = () => {
   const { month, year } = useParams();
   const currentDate = new Date();
@@ -293,17 +310,38 @@ export const MonthDetailView = () => {
                 data.entries.turno.map((entry) => (
                   <div key={entry.id} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Briefcase className="w-5 h-5 text-gray-400" />
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                          <Briefcase className="w-5 h-5 text-violet-600" />
+                        </div>
                         <div>
-                          <p className="font-medium">{entry.date}</p>
-                          <p className="text-sm text-gray-600">
-                            {entry.start} - {entry.end}
-                          </p>
+                          <p className="font-medium text-gray-900">{entry.date}</p>
+                          <div className="text-sm text-gray-600 space-y-1 mt-1">
+                            <div className="flex items-center gap-4">
+                              <p>
+                                <span className="font-medium text-gray-700">Início:</span>{' '}
+                                {entry.start_time}
+                              </p>
+                              <p>
+                                <span className="font-medium text-gray-700">Fim:</span>{' '}
+                                {entry.end_time}
+                              </p>
+                              <p>
+                                <span className="font-medium text-gray-700">Duração:</span>{' '}
+                                <span className="text-violet-600 font-medium">
+                                  {calculateDuration(entry.start_time, entry.end_time)}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-500">{entry.comment}</span>
+                        {entry.comment && (
+                          <span className="text-sm text-gray-500 max-w-[200px] truncate" title={entry.comment}>
+                            {entry.comment}
+                          </span>
+                        )}
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={() => handleEditTimeEntry(entry)}
