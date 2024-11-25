@@ -80,6 +80,8 @@ O calendário não estava sendo exibido no NonAccountingEntryModal quando o moda
   - A primeira entrada termina exatamente em 23:59:59 e a segunda começa em 00:00:00
   - As horas são distribuídas corretamente entre os dias para relatórios diários/mensais
 - Removida opção de editar lançamentos de turno, mantendo apenas a exclusão
+- Corrigido cálculo de horas previstas para usar a fórmula (160/total de dias) * dias a trabalhar
+- Melhorada exibição dos lançamentos não contábeis mostrando data, tipo e comentário
 
 ### Removido
 

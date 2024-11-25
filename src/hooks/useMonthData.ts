@@ -41,8 +41,12 @@ const calculateWorkedHours = (entries: TimeEntry[]) => {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
-const calculateExpectedHours = (workingDays: number) => {
-  const totalMinutes = workingDays * 8 * 60; // 8 horas por dia
+const calculateExpectedHours = (workingDays: number, month: number, year: number) => {
+  // Calcula o total de dias no mês
+  const totalDays = new Date(year, month, 0).getDate();
+  
+  // Calcula as horas previstas usando a fórmula (160/total de dias) * dias a trabalhar
+  const totalMinutes = Math.round((160 / totalDays) * workingDays * 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = Math.round(totalMinutes % 60);
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
@@ -101,7 +105,7 @@ export const useMonthData = (month: number, year: number) => {
 
       // Calcular horas
       const workedHours = calculateWorkedHours(timeEntries || []);
-      const expectedHours = calculateExpectedHours(workingDays);
+      const expectedHours = calculateExpectedHours(workingDays, month, year);
       const balance = calculateHourBalance(workedHours, expectedHours);
 
       const newData = {

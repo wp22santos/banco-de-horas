@@ -243,30 +243,36 @@ export const MonthDetailView = () => {
                 data.entries.naoContabil.map((entry) => (
                   <div key={entry.id} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <CalendarRange className="w-5 h-5 text-gray-400" />
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                          <CalendarRange className="w-5 h-5 text-purple-600" />
+                        </div>
                         <div>
-                          <p className="font-medium">{entry.type}</p>
-                          <p className="text-sm text-gray-600">
-                            {entry.days} {entry.days > 1 ? 'dias' : 'dia'}
-                          </p>
+                          <p className="font-medium text-gray-900">{entry.date}</p>
+                          <div className="text-sm text-gray-600 space-y-1 mt-1">
+                            <div className="flex items-center gap-4">
+                              <p>
+                                <span className="font-medium text-gray-700">Tipo:</span>{' '}
+                                <span className="text-purple-600">{entry.type}</span>
+                              </p>
+                              {entry.comment && (
+                                <p>
+                                  <span className="font-medium text-gray-700">Comentário:</span>{' '}
+                                  {entry.comment}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-500">{entry.comment}</span>
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => handleEditNonAccountingEntry(entry)}
-                            className="p-2 text-gray-400 hover:text-violet-500 rounded-lg hover:bg-violet-50 transition-colors"
-                          >
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteClick('naoContabil', entry)}
-                            className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
+                      <div className="flex items-center">
+                        <button 
+                          onClick={() => handleDeleteClick('naoContabil', entry)}
+                          className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                          title="Excluir lançamento"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
                       </div>
                     </div>
                   </div>
