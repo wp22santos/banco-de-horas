@@ -62,13 +62,24 @@ O calendário não estava sendo exibido no NonAccountingEntryModal quando o moda
 - Adicionada correção automática para entradas existentes com mês incorreto
 - Atualizada a lógica de criação de novas entradas para garantir o cálculo correto do mês
 
-## [Unreleased]
+## [Não publicado]
 
-### Fixed
+### Adicionado
+
+### Modificado
 - Corrigido o calendário do modal de lançamentos não contábeis para abrir no mês correto
   - Substituído o uso de `new Date()` por `new DateObject()` nas props `defaultValue` e `currentDate`
   - Ajustado o formato do objeto para usar o mês corretamente (1-12)
   - Importado `DateObject` do `react-multi-date-picker`
+- Corrigido o problema com turnos que passam da meia-noite, agora criando duas entradas automáticas (uma até 23:59 e outra começando à meia-noite)
+- Implementada nova solução para turnos que passam da meia-noite:
+  - O sistema agora cria automaticamente duas entradas (uma até 23:59:59 e outra começando em 00:00:00)
+  - Corrigido o cálculo de horas trabalhadas para considerar os segundos
+  - Exemplo: um turno das 18:00 às 06:00 agora mostra corretamente 12 horas (antes mostrava 11:59)
+  - A primeira entrada termina exatamente em 23:59:59 e a segunda começa em 00:00:00
+  - As horas são distribuídas corretamente entre os dias para relatórios diários/mensais
+
+### Removido
 
 ### Aprendizados
 1. O componente `Calendar` é mais simples e direto que o `DatePicker`

@@ -31,7 +31,8 @@ const calculateWorkedHours = (entries: TimeEntry[]) => {
   entries.forEach(entry => {
     const start = new Date(`2000-01-01T${entry.start_time}`);
     const end = new Date(`2000-01-01T${entry.end_time}`);
-    const diffMinutes = (end.getTime() - start.getTime()) / 1000 / 60;
+    // Calculando a diferença em minutos incluindo os segundos
+    const diffMinutes = Math.round((end.getTime() - start.getTime()) / 1000 / 60);
     totalMinutes += diffMinutes;
   });
 

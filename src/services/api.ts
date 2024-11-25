@@ -82,6 +82,59 @@ export const createTimeEntry = async (entry: Omit<TimeEntry, 'id'>) => {
 
   const { month, year } = extractMonthAndYear(entry.date);
   
+  // Se o horário final for menor que o inicial, criar duas entradas
+  const startTime = new Date(`2000-01-01T${entry.start_time}`);
+  const endTime = new Date(`2000-01-01T${entry.end_time}`);
+  
+  if (endTime < startTime) {
+    // Primeira entrada: do horário inicial até 23:59:59
+    const firstEntry = {
+      ...entry,
+      end_time: '23:59:59',
+      user_id: userId,
+      month,
+      year
+    };
+
+    // Segunda entrada: da meia-noite até o horário final
+    const nextDay = new Date(entry.date);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const { month: nextMonth, year: nextYear } = extractMonthAndYear(nextDay.toISOString().split('T')[0]);
+
+    const secondEntry = {
+      ...entry,
+      date: nextDay.toISOString().split('T')[0],
+      start_time: '00:00:00',
+      user_id: userId,
+      month: nextMonth,
+      year: nextYear
+    };
+
+    // Inserir as duas entradas
+    const { error: error1 } = await supabase
+      .from('time_entries')
+      .insert([firstEntry]);
+
+    if (error1) {
+      console.error('[API] Erro ao criar primeira entrada:', error1);
+      throw error1;
+    }
+
+    const { data: data2, error: error2 } = await supabase
+      .from('time_entries')
+      .insert([secondEntry])
+      .select()
+      .single();
+
+    if (error2) {
+      console.error('[API] Erro ao criar segunda entrada:', error2);
+      throw error2;
+    }
+
+    return data2;
+  }
+  
+  // Se não passar da meia-noite, criar apenas uma entrada normalmente
   const { data, error } = await supabase
     .from('time_entries')
     .insert([{
