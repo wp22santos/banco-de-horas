@@ -143,6 +143,11 @@ export const useMonthData = (month: number, year: number) => {
       const start = new Date(`2000-01-01T${entry.start_time}`);
       let end = new Date(`2000-01-01T${entry.end_time}`);
       
+      // Validar que o horário de início seja menor que o horário de fim
+      if (start.getTime() === end.getTime()) {
+        throw new Error('O horário de início não pode ser igual ao horário de fim');
+      }
+      
       // Se horário final for menor que inicial, adicionar 1 dia
       if (end < start) {
         end = new Date(`2000-01-02T${entry.end_time}`);
