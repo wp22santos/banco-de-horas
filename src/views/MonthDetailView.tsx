@@ -14,8 +14,7 @@ import {
   Briefcase,
   CalendarRange,
   ArrowLeft,
-  Trash2,
-  Edit
+  Trash2
 } from 'lucide-react';
 
 // Função auxiliar para calcular a duração de um turno
@@ -48,7 +47,6 @@ export const MonthDetailView = () => {
     validateTimeEntry,
     validateNonAccountingEntry,
     addTimeEntry,
-    updateTimeEntry,
     deleteTimeEntry,
     addNonAccountingEntry,
     updateNonAccountingEntry,
@@ -62,11 +60,7 @@ export const MonthDetailView = () => {
   const [selectedType, setSelectedType] = useState<'turno' | 'naoContabil'>('turno');
 
   const handleSaveTimeEntry = async (entry: Omit<TimeEntry, 'id'>) => {
-    if (selectedEntry) {
-      await updateTimeEntry(selectedEntry.id, entry);
-    } else {
-      await addTimeEntry(entry);
-    }
+    await addTimeEntry(entry);
     setTimeModalOpen(false);
     setSelectedEntry(null);
   };
@@ -89,11 +83,6 @@ export const MonthDetailView = () => {
     }
     setDeleteModalOpen(false);
     setSelectedEntry(null);
-  };
-
-  const handleEditTimeEntry = (entry: TimeEntry) => {
-    setSelectedEntry(entry);
-    setTimeModalOpen(true);
   };
 
   const handleEditNonAccountingEntry = (entry: NonAccountingEntry) => {
@@ -270,7 +259,6 @@ export const MonthDetailView = () => {
                             onClick={() => handleEditNonAccountingEntry(entry)}
                             className="p-2 text-gray-400 hover:text-violet-500 rounded-lg hover:bg-violet-50 transition-colors"
                           >
-                            <Edit className="w-5 h-5" />
                           </button>
                           <button 
                             onClick={() => handleDeleteClick('naoContabil', entry)}
@@ -342,16 +330,11 @@ export const MonthDetailView = () => {
                             {entry.comment}
                           </span>
                         )}
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => handleEditTimeEntry(entry)}
-                            className="p-2 text-gray-400 hover:text-violet-500 rounded-lg hover:bg-violet-50 transition-colors"
-                          >
-                            <Edit className="w-5 h-5" />
-                          </button>
+                        <div className="flex items-center">
                           <button 
                             onClick={() => handleDeleteClick('turno', entry)}
                             className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                            title="Excluir lançamento"
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
