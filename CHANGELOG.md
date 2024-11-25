@@ -66,7 +66,8 @@ O calendário não estava sendo exibido no NonAccountingEntryModal quando o moda
 
 ### Adicionado
 
-### Modificado
+### Corrigido
+- Corrigido problema no calendário de lançamentos não contábeis que impedia a seleção de datas em meses anteriores ao atual
 - Corrigido o calendário do modal de lançamentos não contábeis para abrir no mês correto
   - Substituído o uso de `new Date()` por `new DateObject()` nas props `defaultValue` e `currentDate`
   - Ajustado o formato do objeto para usar o mês corretamente (1-12)
@@ -78,6 +79,7 @@ O calendário não estava sendo exibido no NonAccountingEntryModal quando o moda
   - Exemplo: um turno das 18:00 às 06:00 agora mostra corretamente 12 horas (antes mostrava 11:59)
   - A primeira entrada termina exatamente em 23:59:59 e a segunda começa em 00:00:00
   - As horas são distribuídas corretamente entre os dias para relatórios diários/mensais
+- Removida opção de editar lançamentos de turno, mantendo apenas a exclusão
 
 ### Removido
 

@@ -141,7 +141,8 @@ export const NonAccountingEntryModal = ({
                 format="DD/MM/YYYY"
                 weekDays={["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]}
                 months={["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]}
-                minDate={new Date()}
+                minDate={new DateObject({ year, month, day: 1 })}
+                maxDate={new DateObject({ year, month: month + 1, day: 0 })}
               />
             </div>
             <div className="mt-2 text-sm text-gray-500">
