@@ -54,6 +54,37 @@ O calendário não estava sendo exibido no NonAccountingEntryModal quando o moda
   minDate={new Date()}
 />
 
+## [2024-01-10] - Melhorias na Responsividade Mobile
+
+### Problema
+O layout estava sendo cortado em telas mobile, com problemas de scroll horizontal e espaçamento inadequado.
+
+### Solução
+1. Ajuste nos containers principais:
+   - Redução do padding lateral em mobile (`px-4`)
+   - Padding maior em telas desktop (`sm:px-6`)
+
+2. Otimização dos grids de cards:
+   - Layout em coluna única para mobile (`grid-cols-1`)
+   - Três colunas em telas maiores (`sm:grid-cols-3`)
+   - Espaçamento reduzido em mobile (`gap-4`)
+   - Espaçamento maior em desktop (`sm:gap-8`)
+
+### Código Atualizado
+```tsx
+// Containers principais
+className="max-w-5xl mx-auto px-4 sm:px-6 py-6"
+
+// Grids de cards
+className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8"
+```
+
+### Resultados
+- Eliminação do scroll horizontal em mobile
+- Melhor organização dos cards em telas pequenas
+- Transição suave entre layouts mobile e desktop
+- Preservação da estrutura vertical dos elementos
+
 ## [0.2.1] - 2024-03-26
 
 ### Fixed
