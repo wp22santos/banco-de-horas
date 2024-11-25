@@ -117,6 +117,23 @@ className="flex flex-wrap justify-center gap-6 w-full md:w-auto"
 - Melhor experiência em dispositivos móveis
 - Elementos perfeitamente alinhados e centralizados
 
+## [2024-01-10] - Correção no Cálculo de Horas Previstas
+
+### Problema
+Os valores de horas previstas, trabalhadas e saldo estavam inconsistentes entre a página inicial (visão anual e trimestral) e as páginas individuais dos meses.
+
+### Sintomas
+- Na página inicial, os valores de horas previstas e saldo não correspondiam aos valores mostrados nas páginas dos meses
+- O cálculo estava usando uma lógica simplificada de 8 horas por dia útil na visão anual e trimestral
+- Nas páginas dos meses, o cálculo usava a fórmula correta: (160/total de dias) * dias úteis
+
+### Solução
+1. Unificada a lógica de cálculo em toda a aplicação usando a fórmula: (160/total de dias) * dias úteis
+2. Atualizado o cálculo nos hooks:
+   - useYearData.ts: atualizado para usar a mesma fórmula da página do mês
+   - useQuarterData.ts: atualizado para calcular corretamente as horas previstas por mês
+3. Agora todos os valores são consistentes em toda a aplicação
+
 ## [0.2.1] - 2024-03-26
 
 ### Fixed
