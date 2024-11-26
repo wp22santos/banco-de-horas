@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 export const PricingPlans: React.FC = () => {
-    const { plans, subscription, loading } = useSubscription();
+    const { plans, loading } = useSubscription();
     const { user } = useAuth();
     const navigate = useNavigate();
     const subscriptionService = new SubscriptionService();

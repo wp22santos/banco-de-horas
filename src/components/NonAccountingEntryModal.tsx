@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
 import { NonAccountingEntry } from '../types';
-import { CustomCalendar } from './CustomCalendar';
-import { formatDate } from '../utils/formatDate';
 
 interface NonAccountingEntryModalProps {
   isOpen: boolean;
@@ -131,7 +128,9 @@ export const NonAccountingEntryModal = ({
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
           >
-            <X className="w-5 h-5" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
           </button>
         </div>
 
@@ -144,22 +143,25 @@ export const NonAccountingEntryModal = ({
 
           <div className="space-y-1">
             <div className="min-h-[300px] p-4">
-              <CustomCalendar
-                year={year}
-                month={month}
-                selectedDates={selectedDates}
-                onDateSelect={(date) => {
-                  const isSelected = selectedDates.some(
-                    selectedDate => selectedDate.getTime() === date.getTime()
-                  );
-
-                  const newDates = isSelected
-                    ? selectedDates.filter(d => d.getTime() !== date.getTime())
-                    : [...selectedDates, date];
-
-                  handleDateChange(newDates);
-                }}
-              />
+              <div className="calendar">
+                <div className="calendar-header">
+                  <div className="calendar-header-title">{months[month - 1]} {year}</div>
+                </div>
+                <div className="calendar-body">
+                  <div className="calendar-weekdays">
+                    {weekDays.map((day, index) => (
+                      <div key={index} className="calendar-weekday">{day}</div>
+                    ))}
+                  </div>
+                  <div className="calendar-days">
+                    {Array.from({ length: lastDay }, (_, index) => (
+                      <div key={index} className="calendar-day">
+                        <div className="calendar-day-number">{index + 1}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="mt-2 text-sm text-gray-500">
               {selectedDates.length} dia(s) selecionado(s)
@@ -213,7 +215,9 @@ export const NonAccountingEntryModal = ({
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 animate-spin" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0114.717 3.715l1.299-1.299a11.924 11.924 0 01-8.012-8.012V2a1 1 0 011-1zm6.718 9.717a1 1 0 01-.707.293L9 12.293l-2.706-2.707a1 1 0 012.707-1.707l2.047 2.047z" clipRule="evenodd" />
+                  </svg>
                   Salvando...
                 </>
               ) : (

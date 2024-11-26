@@ -25,10 +25,11 @@ export const SubscriptionStatus: React.FC = () => {
     }
 
     if (subscription.status === 'trial') {
-        const daysLeft = Math.ceil(
-            (new Date(subscription.trial_end_date).getTime() - new Date().getTime()) 
+        const trialEndDate = subscription?.trial_end_date ? new Date(subscription.trial_end_date) : null;
+        const daysLeft = trialEndDate ? Math.ceil(
+            (trialEndDate.getTime() - new Date().getTime()) 
             / (1000 * 60 * 60 * 24)
-        );
+        ) : 0;
 
         return (
             <div className="bg-blue-50 border-l-4 border-blue-400 p-4">

@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { Request, Response } from 'express'
 import cors from 'cors'
 import { createClient } from '@supabase/supabase-js'
 
@@ -12,7 +12,7 @@ const mercadoPagoToken = process.env.VITE_MERCADOPAGO_ACCESS_TOKEN!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-app.post('/webhook', async (req, res) => {
+app.post('/webhook', async (req: Request, res: Response) => {
   try {
     const data = req.body
 
