@@ -26,7 +26,7 @@ interface MonthCardProps {
 
 const MonthCard: React.FC<MonthCardProps> = ({ month, previsto, trabalhado, saldo, onClick, disabled }) => {
   const getStatusColor = () => {
-    if (parseFloat(saldo.replace('-', '')) === 0) return 'text-green-500';
+    if (saldo === '0h:00min') return 'text-green-500';
     return saldo.startsWith('-') ? 'text-red-500' : 'text-green-500';
   };
 
@@ -174,9 +174,9 @@ const YearView = () => {
   ];
 
   const selectedQuarterData = quarterData || {
-    previsto: '00:00',
-    trabalhado: '00:00',
-    saldo: '00:00'
+    previsto: '0h:00min',
+    trabalhado: '0h:00min',
+    saldo: '0h:00min'
   };
 
   return (

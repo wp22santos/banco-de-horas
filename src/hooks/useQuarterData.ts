@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { calculateHourBalance } from '../utils/calculations';
 import { useCache } from '../contexts/CacheContext';
 
 interface QuarterData {
@@ -60,38 +59,53 @@ export const useQuarterData = (quarter: number, year: number) => {
 
           if (workingDaysError) throw workingDaysError;
 
-          // Calcular horas previstas
+          // Calcular horas previstas usando a mesma fórmula do useMonthData
           const totalDays = new Date(year, month, 0).getDate();
-          const monthExpectedMinutes = Math.round((160 / totalDays) * workingDays * 60);
-          totalExpectedMinutes += monthExpectedMinutes;
+          const expectedMinutes = Math.round((160 / totalDays) * workingDays * 60);
+          totalExpectedMinutes += expectedMinutes;
 
-          // Buscar o total de horas trabalhadas do mês
-          const { data: monthData, error: monthError } = await supabase
-            .from('monthly_hours')
-            .select('total_worked_minutes')
+          // Buscar todas as entradas do mês
+          const { data: entries, error: entriesError } = await supabase
+            .from('time_entries')
+            .select('*')
             .eq('user_id', userId)
             .eq('month', month)
-            .eq('year', year)
-            .maybeSingle();
+            .eq('year', year);
 
-          if (monthError) throw monthError;
+          if (entriesError) throw entriesError;
 
-          if (monthData?.total_worked_minutes) {
-            totalWorkedMinutes += monthData.total_worked_minutes;
-          }
+          // Calcular minutos trabalhados
+          entries?.forEach(entry => {
+            const start = new Date(`2000-01-01T${entry.start_time}`);
+            let end = new Date(`2000-01-01T${entry.end_time}`);
+            
+            // Se o horário final for menor que o inicial, significa que passou da meia-noite
+            if (end < start) {
+              end = new Date(`2000-01-02T${entry.end_time}`);
+            }
+            
+            // Calculando a diferença em minutos
+            const diffMinutes = Math.round((end.getTime() - start.getTime()) / 1000 / 60);
+            
+            // Adicionando o tempo noturno
+            const [nightHours, nightMinutes] = entry.night_time.split(':').map(Number);
+            const totalNightMinutes = (nightHours * 60) + nightMinutes;
+            
+            totalWorkedMinutes += diffMinutes + totalNightMinutes;
+          });
         }
 
-        // Converter minutos em formato HH:MM
+        // Converter minutos em formato 'XXXh:XXmin'
         const formatHours = (minutes: number) => {
           const hours = Math.floor(Math.abs(minutes) / 60);
           const mins = Math.abs(minutes) % 60;
           const sign = minutes < 0 ? '-' : '';
-          return `${sign}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+          return `${sign}${hours}h:${mins.toString().padStart(2, '0')}min`;
         };
 
         const previsto = formatHours(totalExpectedMinutes);
         const trabalhado = formatHours(totalWorkedMinutes);
-        const saldo = calculateHourBalance(trabalhado, previsto);
+        const saldo = formatHours(totalWorkedMinutes - totalExpectedMinutes);
 
         const quarterData = {
           previsto,
