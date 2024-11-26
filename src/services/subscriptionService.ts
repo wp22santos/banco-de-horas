@@ -1,7 +1,10 @@
 import { supabase } from '../lib/supabase';
 import { SubscriptionPlan, Subscription } from '../types/subscription';
+import { MercadoPagoService } from './mercadoPagoService';
 
 export class SubscriptionService {
+    private mercadoPagoService = new MercadoPagoService();
+
     // Buscar todos os planos ativos
     async getActivePlans(): Promise<SubscriptionPlan[]> {
         const { data, error } = await supabase
@@ -138,5 +141,24 @@ export class SubscriptionService {
             .eq('status', 'active');
 
         if (error) throw error;
+    }
+
+    // Criar preferência de pagamento
+    async createPaymentPreference(userId: string, planId: string) {
+        // Buscar o plano
+        const { data: plan, error: planError } = await supabase
+            .from('subscription_plans')
+            .select('*')
+            .eq('id', planId)
+            .single();
+
+        if (planError) throw planError;
+
+        // Buscar o email do usuário
+        const { data: { user }, error: userError } = await supabase.auth.getUser(userId);
+        if (userError) throw userError;
+
+        // Criar preferência no MercadoPago
+        return this.mercadoPagoService.createPaymentPreference(plan, user.email, userId);
     }
 }
