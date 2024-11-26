@@ -155,8 +155,10 @@ export class SubscriptionService {
         if (planError) throw planError;
 
         // Buscar o email do usuário
-        const { data: { user }, error: userError } = await supabase.auth.getUser(userId);
-        if (userError) throw userError;
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user || !user.email) {
+            throw new Error('Usuário não encontrado ou sem email');
+        }
 
         // Criar preferência no MercadoPago
         return this.mercadoPagoService.createPaymentPreference(plan, user.email, userId);
