@@ -11,26 +11,21 @@ export const PricingPlans: React.FC = () => {
     const navigate = useNavigate();
     const subscriptionService = new SubscriptionService();
 
-    const handleStartTrial = async (planId: string) => {
+    const handleSubscribe = async (planId: string) => {
         if (!user) {
             navigate('/login');
             return;
         }
 
         try {
-            // Verificar se já teve trial
-            const hasActive = await subscriptionService.hasActiveSubscription(user.id);
-            if (hasActive) {
-                alert('Você já possui uma assinatura ativa ou período de teste em andamento.');
-                return;
+            // Criar preferência de pagamento
+            const preference = await subscriptionService.createPaymentPreference(user.id, planId);
+            if (preference?.init_point) {
+                window.location.href = preference.init_point;
             }
-
-            // Iniciar trial
-            await subscriptionService.startTrial(user.id, planId);
-            navigate('/dashboard');
         } catch (error) {
-            console.error('Erro ao iniciar trial:', error);
-            alert('Erro ao iniciar período de teste. Tente novamente.');
+            console.error('Erro ao criar pagamento:', error);
+            alert('Erro ao processar pagamento. Tente novamente.');
         }
     };
 
@@ -49,7 +44,7 @@ export const PricingPlans: React.FC = () => {
                     Escolha seu plano
                 </h2>
                 <p className="mt-4 text-lg text-gray-600">
-                    Comece grátis por 7 dias. Cancele quando quiser.
+                    Assine agora e comece a usar imediatamente
                 </p>
             </div>
 
@@ -80,11 +75,11 @@ export const PricingPlans: React.FC = () => {
 
                         <div className="mt-8">
                             <button
-                                onClick={() => handleStartTrial(plan.id)}
+                                onClick={() => handleSubscribe(plan.id)}
                                 className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
                                 disabled={loading}
                             >
-                                Começar Trial Grátis
+                                Assinar Agora
                             </button>
                         </div>
 
