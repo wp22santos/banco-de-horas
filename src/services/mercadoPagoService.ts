@@ -1,33 +1,50 @@
-import mercadopago from 'mercadopago';
-import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { mercadopagoConfig } from '../config/mercadopago';
 import { SubscriptionPlan } from '../types/subscription';
 
-const mercadoPagoConfig = new MercadoPagoConfig({
-    accessToken: mercadopagoConfig.accessToken
-});
+type MercadoPagoPreference = {
+    items: Array<{
+        id: string;
+        title: string;
+        quantity: number;
+        unit_price: number;
+        description: string;
+        currency_id: string;
+    }>;
+    payer: {
+        email: string;
+    };
+    external_reference: string;
+    back_urls: {
+        success: string;
+        failure: string;
+        pending: string;
+    };
+    auto_return: string;
+    notification_url: string;
+}
 
 export class MercadoPagoService {
+    private baseUrl = 'https://api.mercadopago.com';
+
     async createPaymentPreference(
         plan: SubscriptionPlan,
         userEmail: string,
         userId: string
     ) {
         try {
-            const preference = new Preference(mercadoPagoConfig);
-            
-            const preferenceData = {
+            const preference: MercadoPagoPreference = {
                 items: [{
+                    id: plan.id,
                     title: `${plan.name} - Controle de Horas`,
                     quantity: 1,
-                    currency_id: 'BRL',
-                    unit_price: plan.price,
-                    description: `Assinatura ${plan.type === 'monthly' ? 'mensal' : 'anual'}`
+                    unit_price: Number(plan.price),
+                    description: `Assinatura do plano ${plan.name}`,
+                    currency_id: "BRL"
                 }],
                 payer: {
                     email: userEmail
                 },
-                external_reference: `${userId}_${plan.id}`, // Para identificar o usuário e plano
+                external_reference: userId,
                 back_urls: {
                     success: `${window.location.origin}/pagamento/sucesso`,
                     failure: `${window.location.origin}/pagamento/erro`,
@@ -37,38 +54,53 @@ export class MercadoPagoService {
                 notification_url: `${window.location.origin}/api/webhook/mercadopago`
             };
 
-            const response = await preference.create({ body: preferenceData });
-            return response.body;
+            const response = await fetch(`${this.baseUrl}/checkout/preferences`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${mercadopagoConfig.accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(preference)
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao criar preferência de pagamento');
+            }
+
+            return await response.json();
         } catch (error) {
             console.error('Erro ao criar preferência de pagamento:', error);
             throw error;
         }
     }
 
-    // Verificar status do pagamento
     async checkPaymentStatus(paymentId: string) {
         try {
-            const response = await mercadopago.payment.get(paymentId);
-            return response.body;
+            const response = await fetch(`${this.baseUrl}/v1/payments/${paymentId}`, {
+                headers: {
+                    'Authorization': `Bearer ${mercadopagoConfig.accessToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao verificar status do pagamento');
+            }
+
+            return await response.json();
         } catch (error) {
             console.error('Erro ao verificar status do pagamento:', error);
             throw error;
         }
     }
 
-    // Processar webhook do Mercado Pago
-    async processWebhook(data: any) {
+    async handleWebhook(data: any) {
         try {
             if (data.type === 'payment') {
                 const paymentId = data.data.id;
                 const payment = await this.checkPaymentStatus(paymentId);
                 
-                // Extrair user_id e plan_id do external_reference
-                const [userId, planId] = payment.external_reference.split('_');
-                
                 return {
-                    userId,
-                    planId,
+                    userId: payment.external_reference,
                     status: payment.status,
                     paymentId: payment.id,
                     amount: payment.transaction_amount

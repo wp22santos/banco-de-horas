@@ -1,56 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NonAccountingEntry } from '../types';
 
 interface NonAccountingEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (entry: Omit<NonAccountingEntry, 'id'>) => Promise<void>;
-  onValidate: (entry: Partial<NonAccountingEntry>) => Promise<{ valid: boolean; error?: string }>;
+  onValidate?: (entry: Partial<NonAccountingEntry>) => Promise<{ valid: boolean; error?: string }>;
   month: number;
   year: number;
 }
 
-export const NonAccountingEntryModal = ({ 
-  isOpen, 
-  onClose, 
+export const NonAccountingEntryModal: React.FC<NonAccountingEntryModalProps> = ({
+  isOpen,
+  onClose,
   onSubmit,
   onValidate,
   month,
   year
-}: NonAccountingEntryModalProps) => {
+}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [entry, setEntry] = useState<Partial<NonAccountingEntry>>({
-    date: '',
+    date: new Date().toISOString().split('T')[0],
     type: 'Férias',
     days: 1,
     comment: '',
-    month: month,
-    year: year,
-    user_id: ''
+    month,
+    year
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setEntry(prev => ({ ...prev, [name]: value }));
   };
-
-  useEffect(() => {
-    if (isOpen) {
-      setEntry({
-        date: '',
-        type: 'Férias',
-        days: 1,
-        comment: '',
-        month: month,
-        year: year,
-        user_id: ''
-      });
-      setError(null);
-    }
-  }, [isOpen, month, year]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,23 +42,22 @@ export const NonAccountingEntryModal = ({
     setError(null);
 
     try {
-      const { valid, error } = await onValidate(entry);
+      const { valid, error } = onValidate ? await onValidate(entry) : { valid: true };
       if (!valid) {
         setError(error || 'Dados inválidos');
         return;
       }
 
-      // Criar uma entrada para cada data selecionada
       const fullEntry: Omit<NonAccountingEntry, 'id'> = {
-        days: 1, // cada entrada representa 1 dia
+        days: 1,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         type: entry.type || 'Férias',
-        date: entry.date,
+        date: entry.date || new Date().toISOString().split('T')[0],
         month: entry.month || month,
         year: entry.year || year,
-        comment: entry.comment,
-        user_id: entry.user_id || 'default-user'  
+        comment: entry.comment || '',
+        user_id: entry.user_id || 'default-user'
       };
 
       await onSubmit(fullEntry);
@@ -93,8 +76,6 @@ export const NonAccountingEntryModal = ({
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
   
-  // Criar a data inicial com o mês e ano corretos
-  const initialDate = new Date(year, month - 1);
   const lastDay = new Date(year, month, 0).getDate();
 
   return (
@@ -148,7 +129,7 @@ export const NonAccountingEntryModal = ({
             <select
               name="type"
               value={entry.type}
-              onChange={handleChange}
+              onChange={handleInputChange}
               className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500"
               disabled={loading}
               required
@@ -167,7 +148,7 @@ export const NonAccountingEntryModal = ({
               type="text"
               name="comment"
               value={entry.comment}
-              onChange={handleChange}
+              onChange={handleInputChange}
               className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500"
               disabled={loading}
               placeholder="Opcional"

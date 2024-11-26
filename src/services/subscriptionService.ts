@@ -55,7 +55,7 @@ export class SubscriptionService {
 
     // Verificar se usuário está em trial ou tem assinatura ativa
     async hasActiveSubscription(userId: string): Promise<boolean> {
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('subscriptions')
             .select('status')
             .eq('user_id', userId)
@@ -117,27 +117,13 @@ export class SubscriptionService {
         const threeDaysFromNow = new Date();
         threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
 
-        // Buscar assinaturas que expiram em 3 dias
-        const { data: expiringSubscriptions, error } = await supabase
+        const { error } = await supabase
             .from('subscriptions')
             .select('*')
             .eq('status', 'trial')
             .lt('trial_end_date', threeDaysFromNow.toISOString());
 
         if (error) throw error;
-
-        // Aqui você pode adicionar a lógica para notificar os usuários
-        // Por exemplo, enviar e-mails de aviso
-        for (const subscription of expiringSubscriptions) {
-            await this.notifyExpiringTrial(subscription);
-        }
-    }
-
-    // Notificar usuário sobre trial expirando
-    private async notifyExpiringTrial(subscription: any): Promise<void> {
-        // Aqui você implementaria a lógica de envio de e-mail
-        // Por exemplo, usando SendGrid ou outro serviço de e-mail
-        console.log(`Notificar usuário ${subscription.user_id} sobre trial expirando`);
     }
 
     // Cancelar assinatura
