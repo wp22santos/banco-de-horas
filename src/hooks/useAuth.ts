@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { User } from '@supabase/supabase-js';
 
 export interface AuthError {
   field?: string;
@@ -10,6 +11,7 @@ export interface AuthError {
 export const useAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<AuthError | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
 
   const handleError = (error: any) => {
@@ -25,6 +27,20 @@ export const useAuth = () => {
       setError({ message: 'Ocorreu um erro. Tente novamente.' });
     }
   };
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
@@ -95,6 +111,7 @@ export const useAuth = () => {
   return {
     loading,
     error,
+    user,
     login,
     register,
     resetPassword,

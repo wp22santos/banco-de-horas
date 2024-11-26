@@ -7,7 +7,7 @@ export function useSubscription() {
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
     const [loading, setLoading] = useState(true);
-    const { user, ...auth } = useAuth();
+    const { user } = useAuth();
     const subscriptionService = new SubscriptionService();
 
     useEffect(() => {

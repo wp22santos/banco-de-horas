@@ -20,7 +20,6 @@ export const NonAccountingEntryModal = ({
 }: NonAccountingEntryModalProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [entry, setEntry] = useState<Partial<NonAccountingEntry>>({
     date: '',
     type: 'Férias',
@@ -38,23 +37,8 @@ export const NonAccountingEntryModal = ({
     setEntry(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleDateChange = (dates: Date[]) => {
-    setSelectedDates(dates);
-    
-    if (dates.length > 0) {
-      const firstDate = dates[0];
-      const formattedDate = firstDate.toISOString().split('T')[0];
-      setEntry(prev => ({ 
-        ...prev, 
-        date: formattedDate,
-        days: dates.length 
-      }));
-    }
-  };
-
   useEffect(() => {
     if (isOpen) {
-      setSelectedDates([]);
       setEntry({
         date: '',
         type: 'Férias',
@@ -74,10 +58,6 @@ export const NonAccountingEntryModal = ({
     setError(null);
 
     try {
-      if (selectedDates.length === 0) {
-        throw new Error('Selecione pelo menos uma data');
-      }
-
       const { valid, error } = await onValidate(entry);
       if (!valid) {
         setError(error || 'Dados inválidos');
@@ -85,21 +65,19 @@ export const NonAccountingEntryModal = ({
       }
 
       // Criar uma entrada para cada data selecionada
-      for (const selectedDate of selectedDates) {
-        const fullEntry: Omit<NonAccountingEntry, 'id'> = {
-          days: 1, // cada entrada representa 1 dia
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          type: entry.type || 'Férias',
-          date: selectedDate.toISOString().split('T')[0],
-          month: entry.month || month,
-          year: entry.year || year,
-          comment: entry.comment,
-          user_id: entry.user_id || 'default-user'  
-        };
+      const fullEntry: Omit<NonAccountingEntry, 'id'> = {
+        days: 1, // cada entrada representa 1 dia
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        type: entry.type || 'Férias',
+        date: entry.date,
+        month: entry.month || month,
+        year: entry.year || year,
+        comment: entry.comment,
+        user_id: entry.user_id || 'default-user'  
+      };
 
-        await onSubmit(fullEntry);
-      }
+      await onSubmit(fullEntry);
       
       onClose();
     } catch (err: any) {
@@ -162,9 +140,6 @@ export const NonAccountingEntryModal = ({
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-500">
-              {selectedDates.length} dia(s) selecionado(s)
             </div>
           </div>
 

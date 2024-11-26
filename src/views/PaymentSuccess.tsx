@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 export const PaymentSuccess: React.FC = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { user, isLoading, error } = useAuth();
+    const { user } = useAuth();
     const subscriptionService = new SubscriptionService();
 
     useEffect(() => {

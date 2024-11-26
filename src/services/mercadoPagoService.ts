@@ -1,9 +1,10 @@
 import mercadopago from 'mercadopago';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { mercadopagoConfig } from '../config/mercadopago';
 import { SubscriptionPlan } from '../types/subscription';
 
-mercadopago.configure({
-    access_token: mercadopagoConfig.accessToken
+const mercadoPagoConfig = new MercadoPagoConfig({
+    accessToken: mercadopagoConfig.accessToken
 });
 
 export class MercadoPagoService {
@@ -13,7 +14,9 @@ export class MercadoPagoService {
         userId: string
     ) {
         try {
-            const preference = {
+            const preference = new Preference(mercadoPagoConfig);
+            
+            const preferenceData = {
                 items: [{
                     title: `${plan.name} - Controle de Horas`,
                     quantity: 1,
@@ -34,7 +37,7 @@ export class MercadoPagoService {
                 notification_url: `${window.location.origin}/api/webhook/mercadopago`
             };
 
-            const response = await mercadopago.preferences.create(preference);
+            const response = await preference.create({ body: preferenceData });
             return response.body;
         } catch (error) {
             console.error('Erro ao criar preferência de pagamento:', error);
