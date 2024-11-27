@@ -13,12 +13,8 @@ export const AuthCallback = () => {
         if (error) throw error;
         
         if (session) {
-          // Obtém o mês e ano atuais
-          const currentDate = new Date();
-          const currentMonth = (currentDate.getMonth() + 1).toString();
-          const currentYear = currentDate.getFullYear().toString();
-          // Redireciona para o mês atual
-          navigate(`/${currentYear}/${currentMonth}`, { replace: true });
+          // Redireciona para a página principal
+          navigate('/', { replace: true });
         } else {
           // Se não tiver sessão, redireciona para a página de login
           navigate('/auth', { replace: true });
