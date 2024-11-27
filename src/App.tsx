@@ -1,13 +1,14 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import AuthView from './views/AuthView';
+import { AuthProvider } from './contexts/AuthContext';
+import { CacheProvider } from './contexts/CacheContext';
+import { PrivateRoute } from './components/PrivateRoute';
+import { AuthView } from './views/AuthView';
 import { YearView } from './views/YearView';
 import { MonthDetailView } from './views/MonthDetailView';
 import { PricingPlans } from './views/PricingPlans';
-import { CacheProvider } from './contexts/CacheContext';
-import { AuthProvider } from './contexts/AuthContext';
-import { PrivateRoute } from './components/PrivateRoute';
 import { PaymentSuccess } from './views/PaymentSuccess';
 import { PaymentError } from './views/PaymentError';
+import { AuthCallback } from './views/AuthCallback';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <CacheProvider>
         <Routes>
           <Route path="/auth" element={<AuthView />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route
             path="/"
             element={

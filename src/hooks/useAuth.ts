@@ -54,7 +54,7 @@ export const useAuth = () => {
 
       if (error) throw error;
       
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (error: any) {
       handleError(error);
     } finally {

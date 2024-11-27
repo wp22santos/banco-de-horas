@@ -44,19 +44,19 @@ export const MonthDetailView = () => {
 
   console.log('Parâmetros da URL:', { month, year });
 
-  // Se não houver mês e ano na URL, redirecionar para o mês atual
+  // Garantir que monthNumber e yearNumber sejam números válidos
+  const monthNumber = month ? parseInt(month) : currentDate.getMonth() + 1;
+  const yearNumber = year ? parseInt(year) : currentDate.getFullYear();
+
+  // Se os valores não forem válidos após a conversão, redirecionar
   useEffect(() => {
-    if (!month || !year) {
+    if (isNaN(monthNumber) || isNaN(yearNumber) || monthNumber < 1 || monthNumber > 12) {
       const currentMonth = (currentDate.getMonth() + 1).toString();
       const currentYear = currentDate.getFullYear().toString();
       navigate(`/${currentYear}/${currentMonth}`, { replace: true });
       return;
     }
-  }, [month, year, navigate]);
-
-  // Garantir que monthNumber e yearNumber sejam números válidos
-  const monthNumber = parseInt(month || '1');
-  const yearNumber = parseInt(year || currentDate.getFullYear().toString());
+  }, [monthNumber, yearNumber, navigate]);
 
   console.log('Valores convertidos:', { monthNumber, yearNumber });
 
