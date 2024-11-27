@@ -7,7 +7,11 @@ export class StripeService {
   async getProducts() {
     const response = await fetch('/api/stripe/products');
     if (!response.ok) {
-      throw new Error('Falha ao buscar produtos');
+      const errorData = await response.json().catch(() => null);
+      throw new Error(
+        errorData?.message || 
+        `Falha ao buscar produtos: ${response.status} ${response.statusText}`
+      );
     }
     return response.json();
   }
@@ -26,7 +30,11 @@ export class StripeService {
     });
 
     if (!response.ok) {
-      throw new Error('Falha ao criar sessão de checkout');
+      const errorData = await response.json().catch(() => null);
+      throw new Error(
+        errorData?.message || 
+        `Falha ao criar sessão de checkout: ${response.status} ${response.statusText}`
+      );
     }
 
     const { sessionId } = await response.json();

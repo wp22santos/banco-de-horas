@@ -11,10 +11,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    console.log('Buscando produtos no Stripe...');
+    console.log('STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY?.slice(0, 8) + '...');
+
     const products = await stripe.products.list({
       expand: ['data.default_price'],
       active: true,
     });
+
+    console.log('Produtos encontrados:', products.data.length);
 
     // Formata os produtos para o frontend
     const formattedProducts = products.data.map((product) => {
@@ -31,7 +36,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(200).json(formattedProducts);
   } catch (error: any) {
-    console.error('Erro ao buscar produtos:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Erro detalhado ao buscar produtos:', {
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      param: error.param,
+      stack: error.stack,
+    });
+
+    res.status(500).json({
+      message: `Erro ao buscar produtos: ${error.message}`,
+      type: error.type,
+      code: error.code,
+      param: error.param,
+    });
   }
 }
