@@ -1,96 +1,130 @@
-import React from 'react';
-import { useSubscription } from '../hooks/useSubscription';
-import { Check, Loader2 } from 'lucide-react';
-import { SubscriptionService } from '../services/subscriptionService';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { stripeService } from '../services/stripeService';
+import { Clock, CheckCircle, Loader2 } from 'lucide-react';
 
-export const PricingPlans: React.FC = () => {
-    const { plans, loading } = useSubscription();
-    const { user } = useAuth();
-    const navigate = useNavigate();
-    const subscriptionService = new SubscriptionService();
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  priceId: string;
+  price: number;
+  interval: string;
+}
 
-    const handleSubscribe = async (planId: string) => {
-        if (!user) {
-            navigate('/login');
-            return;
-        }
+export const PricingPlans = () => {
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-        try {
-            // Criar preferência de pagamento
-            const preference = await subscriptionService.createPaymentPreference(user.id, planId);
-            if (preference?.init_point) {
-                window.location.href = preference.init_point;
-            }
-        } catch (error) {
-            console.error('Erro ao criar pagamento:', error);
-            alert('Erro ao processar pagamento. Tente novamente.');
-        }
-    };
+  useEffect(() => {
+    loadProducts();
+  }, []);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin" />
-            </div>
-        );
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const products = await stripeService.getProducts();
+      setProducts(products);
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubscribe = async (priceId: string) => {
+    if (!user) {
+      setError('Você precisa estar logado para assinar um plano');
+      return;
     }
 
+    try {
+      setLoading(true);
+      await stripeService.createCheckoutSession(priceId, user.id);
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-                    Escolha seu plano
-                </h2>
-                <p className="mt-4 text-lg text-gray-600">
-                    Assine agora e comece a usar imediatamente
-                </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {plans.map((plan) => (
-                    <div
-                        key={plan.id}
-                        className="rounded-lg border border-gray-200 shadow-sm p-6 bg-white"
-                    >
-                        <h3 className="text-lg font-semibold text-gray-900">
-                            {plan.name}
-                        </h3>
-                        <p className="mt-4">
-                            <span className="text-4xl font-bold text-gray-900">
-                                R$ {plan.price.toFixed(2)}
-                            </span>
-                            <span className="text-gray-500">/{plan.type === 'monthly' ? 'mês' : 'ano'}</span>
-                        </p>
-
-                        <ul className="mt-6 space-y-4">
-                            {plan.features.map((feature, index) => (
-                                <li key={index} className="flex items-start">
-                                    <Check className="h-5 w-5 text-green-500 shrink-0" />
-                                    <span className="ml-3 text-gray-600">{feature}</span>
-                                </li>
-                            ))}
-                        </ul>
-
-                        <div className="mt-8">
-                            <button
-                                onClick={() => handleSubscribe(plan.id)}
-                                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-                                disabled={loading}
-                            >
-                                Assinar Agora
-                            </button>
-                        </div>
-
-                        <p className="mt-4 text-sm text-gray-500 text-center">
-                            {plan.max_users === 1 
-                                ? 'Para uso individual'
-                                : `Até ${plan.max_users} usuários`}
-                        </p>
-                    </div>
-                ))}
-            </div>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="text-center mb-12">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-lg mb-4">
+          <Clock className="w-8 h-8 text-violet-600" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Escolha seu plano</h1>
+        <p className="text-lg text-gray-600">Comece agora com 7 dias grátis</p>
+      </div>
+
+      {error && (
+        <div className="max-w-3xl mx-auto mb-8 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* Grid de Planos */}
+      <div className="max-w-7xl mx-auto grid gap-8 lg:grid-cols-3">
+        {products.map((product) => (
+          <div
+            key={product.id}
+            className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+          >
+            <div className="p-8">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">{product.name}</h3>
+              <p className="text-gray-500 mb-6">{product.description}</p>
+              
+              <div className="flex items-baseline mb-8">
+                <span className="text-4xl font-bold text-gray-900">R$ {product.price}</span>
+                <span className="text-gray-500 ml-2">/{product.interval === 'month' ? 'mês' : 'ano'}</span>
+              </div>
+
+              <button
+                onClick={() => handleSubscribe(product.priceId)}
+                disabled={loading}
+                className="w-full bg-violet-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                ) : (
+                  'Começar agora'
+                )}
+              </button>
+            </div>
+
+            {/* Lista de benefícios */}
+            <div className="px-8 pb-8">
+              <h4 className="font-semibold text-gray-900 mb-4">O que está incluído:</h4>
+              <ul className="space-y-3">
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
+                  Registro ilimitado de horas
+                </li>
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
+                  Relatórios detalhados
+                </li>
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
+                  Suporte prioritário
+                </li>
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
