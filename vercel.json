@@ -4,6 +4,14 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/stripe/products",
+      "destination": "/api/stripe/products"
+    },
+    {
+      "source": "/api/stripe/create-checkout-session",
+      "destination": "/api/stripe/create-checkout-session"
+    },
+    {
       "source": "/webhook",
       "destination": "/api/webhook"
     },
