@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -32,8 +32,6 @@ import { calculateTotalTime } from '../utils/calculateTotalTime';
 
 
 
-
-
 export const MonthDetailView = () => {
 
   const { month, year } = useParams();
@@ -46,7 +44,18 @@ export const MonthDetailView = () => {
 
   console.log('Parâmetros da URL:', { month, year });
 
-  const monthNumber = parseInt(month || (currentDate.getMonth() + 1).toString());
+  // Se não houver mês e ano na URL, redirecionar para o mês atual
+  useEffect(() => {
+    if (!month || !year) {
+      const currentMonth = (currentDate.getMonth() + 1).toString();
+      const currentYear = currentDate.getFullYear().toString();
+      navigate(`/${currentYear}/${currentMonth}`, { replace: true });
+      return;
+    }
+  }, [month, year, navigate]);
+
+  // Garantir que monthNumber e yearNumber sejam números válidos
+  const monthNumber = parseInt(month || '1');
   const yearNumber = parseInt(year || currentDate.getFullYear().toString());
 
   console.log('Valores convertidos:', { monthNumber, yearNumber });
@@ -62,7 +71,6 @@ export const MonthDetailView = () => {
     deleteNonAccountingEntry,
     refresh
   } = useMonthData(monthNumber, yearNumber);
-
 
 
   // Initialize timeModalOpen based on navigation state
@@ -105,7 +113,6 @@ export const MonthDetailView = () => {
   };
 
 
-
   const handleSaveNonAccountingEntry = async (entry: Omit<NonAccountingEntry, 'id'>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -131,7 +138,6 @@ export const MonthDetailView = () => {
   };
 
 
-
   const handleDelete = async () => {
     try {
       if (selectedType === 'turno') {
@@ -148,7 +154,6 @@ export const MonthDetailView = () => {
   };
 
 
-
   const handleDeleteClick = (type: 'turno' | 'naoContabil', entry: any) => {
 
     setSelectedType(type);
@@ -160,12 +165,10 @@ export const MonthDetailView = () => {
   };
 
 
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/auth');
   };
-
 
 
   if (loading) {
@@ -211,7 +214,6 @@ export const MonthDetailView = () => {
   if (!data) return null;
 
 
-
   const monthNames = [
 
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -219,7 +221,6 @@ export const MonthDetailView = () => {
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 
   ];
-
 
 
   return (
