@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CacheProvider } from './contexts/CacheContext';
 import { PrivateRoute } from './components/PrivateRoute';
-import { AuthView } from './views/AuthView';
+import AuthView from './views/AuthView';
 import { YearView } from './views/YearView';
 import { MonthDetailView } from './views/MonthDetailView';
 import { PricingPlans } from './views/PricingPlans';
