@@ -1,7 +1,13 @@
 import { loadStripe } from '@stripe/stripe-js';
 import { supabase } from '../lib/supabase';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+if (!STRIPE_PUBLIC_KEY) {
+  throw new Error('Missing Stripe publishable key');
+}
+
+export const stripePromise = loadStripe(STRIPE_PUBLIC_KEY);
 
 export class StripeService {
   // Criar sessão de checkout
