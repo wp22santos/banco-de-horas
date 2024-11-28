@@ -83,7 +83,7 @@ export const useAuth = () => {
       if (error) throw error;
 
       setError({
-        message: 'Email de recuperação enviado! Verifique sua caixa de entrada.',
+        message: 'Se um usuário com este email existir, enviaremos as instruções de recuperação.',
       });
     } catch (error: any) {
       handleError(error);

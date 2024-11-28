@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { Calendar as DatePicker, DateObject } from "react-multi-date-picker";
 import { NonAccountingEntry } from '../types';
-import "react-multi-date-picker/styles/layouts/mobile.css";
-import "react-multi-date-picker/styles/colors/purple.css";
+import { CustomCalendar } from './CustomCalendar';
 import { formatDate } from '../utils/formatDate';
 
 interface NonAccountingEntryModalProps {
@@ -43,27 +41,22 @@ export const NonAccountingEntryModal = ({
     setEntry(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleDateChange = (dates: any) => {
-    console.log('[Modal] Calendar onChange:', dates);
-    if (Array.isArray(dates) && dates.length > 0) {
-      const newDates = dates.map(date => new Date(date));
-      console.log('[Modal] Setting new dates:', newDates);
-      setSelectedDates(newDates);
-      
-      // Atualizar a data no entry quando uma data é selecionada
-      const firstDate = newDates[0];
+  const handleDateChange = (dates: Date[]) => {
+    setSelectedDates(dates);
+    
+    if (dates.length > 0) {
+      const firstDate = dates[0];
       const formattedDate = firstDate.toISOString().split('T')[0];
       setEntry(prev => ({ 
         ...prev, 
         date: formattedDate,
-        days: newDates.length 
+        days: dates.length 
       }));
     }
   };
 
   useEffect(() => {
     if (isOpen) {
-      // Resetar o formulário quando abrir
       setSelectedDates([]);
       setEntry({
         date: '',
@@ -94,19 +87,23 @@ export const NonAccountingEntryModal = ({
         return;
       }
 
-      const fullEntry: Omit<NonAccountingEntry, 'id'> = {
-        days: selectedDates.length,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        type: entry.type || 'Férias',
-        date: entry.date || selectedDates[0].toISOString().split('T')[0],
-        month: entry.month || month,
-        year: entry.year || year,
-        comment: entry.comment,
-        user_id: entry.user_id || 'default-user'  
-      };
+      // Criar uma entrada para cada data selecionada
+      for (const selectedDate of selectedDates) {
+        const fullEntry: Omit<NonAccountingEntry, 'id'> = {
+          days: 1, // cada entrada representa 1 dia
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          type: entry.type || 'Férias',
+          date: selectedDate.toISOString().split('T')[0],
+          month: entry.month || month,
+          year: entry.year || year,
+          comment: entry.comment,
+          user_id: entry.user_id || 'default-user'  
+        };
 
-      await onSubmit(fullEntry);
+        await onSubmit(fullEntry);
+      }
+      
       onClose();
     } catch (err: any) {
       setError(err.message);
@@ -116,19 +113,20 @@ export const NonAccountingEntryModal = ({
     }
   };
 
-  console.log('[Modal] Rendering with selectedDates:', selectedDates);
-
   if (!isOpen) return null;
 
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+  
+  // Criar a data inicial com o mês e ano corretos
+  const initialDate = new Date(year, month - 1);
   const lastDay = new Date(year, month, 0).getDate();
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-lg font-semibold">Novo Não Contábil</h3>
+          <h3 className="text-lg font-semibold">Data Não Contábil</h3>
           <button 
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
@@ -145,26 +143,26 @@ export const NonAccountingEntryModal = ({
           )}
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Datas</label>
-            <div className="border rounded-lg p-1 flex justify-center">
-              <DatePicker
-                value={selectedDates}
-                onChange={handleDateChange}
-                multiple
-                currentDate={new DateObject({ year, month, day: 1 })}
-                format="YYYY-MM-DD"
-                weekDays={weekDays}
-                months={months}
-                minDate={new DateObject({ year, month, day: 1 })}
-                maxDate={new DateObject({ year, month, day: lastDay })}
+            <div className="min-h-[300px] p-4">
+              <CustomCalendar
+                year={year}
+                month={month}
+                selectedDates={selectedDates}
+                onDateSelect={(date) => {
+                  const isSelected = selectedDates.some(
+                    selectedDate => selectedDate.getTime() === date.getTime()
+                  );
+
+                  const newDates = isSelected
+                    ? selectedDates.filter(d => d.getTime() !== date.getTime())
+                    : [...selectedDates, date];
+
+                  handleDateChange(newDates);
+                }}
               />
             </div>
             <div className="mt-2 text-sm text-gray-500">
               {selectedDates.length} dia(s) selecionado(s)
-            </div>
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700">Data selecionada</label>
-              <span className="mt-1 text-gray-900">{selectedDates.length > 0 ? formatDate(selectedDates[0]) : 'Selecione uma data'}</span>
             </div>
           </div>
 

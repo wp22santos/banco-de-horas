@@ -12,7 +12,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { ErrorMessage } from '../components/ErrorMessage';
 
-const AuthView = () => {
+export default function AuthView() {
   const [authMode, setAuthMode] = useState('login'); // login, register, forgot
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -255,5 +255,3 @@ const AuthView = () => {
     </div>
   );
 };
-
-export default AuthView;

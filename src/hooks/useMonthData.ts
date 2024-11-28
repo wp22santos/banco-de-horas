@@ -49,7 +49,7 @@ const calculateWorkedHours = (entries: TimeEntry[]) => {
 
   const hours = Math.floor(totalMinutes / 60);
   const minutes = Math.round(totalMinutes % 60);
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  return `${hours}h:${minutes.toString().padStart(2, '0')}min`;
 };
 
 const calculateExpectedHours = (workingDays: number, month: number, year: number) => {
@@ -60,12 +60,20 @@ const calculateExpectedHours = (workingDays: number, month: number, year: number
   const totalMinutes = Math.round((160 / totalDays) * workingDays * 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = Math.round(totalMinutes % 60);
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  return `${hours}h:${minutes.toString().padStart(2, '0')}min`;
 };
 
 const calculateHourBalance = (worked: string, expected: string) => {
-  const [workedHours, workedMinutes] = worked.split(':').map(Number);
-  const [expectedHours, expectedMinutes] = expected.split(':').map(Number);
+  // Extrair horas e minutos dos formatos "XXh:XXmin"
+  const workedMatch = worked.match(/(\d+)h:(\d+)min/);
+  const expectedMatch = expected.match(/(\d+)h:(\d+)min/);
+  
+  if (!workedMatch || !expectedMatch) return "0h:00min";
+  
+  const workedHours = parseInt(workedMatch[1]);
+  const workedMinutes = parseInt(workedMatch[2]);
+  const expectedHours = parseInt(expectedMatch[1]);
+  const expectedMinutes = parseInt(expectedMatch[2]);
   
   let totalMinutes = (workedHours * 60 + workedMinutes) - (expectedHours * 60 + expectedMinutes);
   const sign = totalMinutes < 0 ? '-' : '';
@@ -73,7 +81,7 @@ const calculateHourBalance = (worked: string, expected: string) => {
   
   const hours = Math.floor(totalMinutes / 60);
   const minutes = Math.round(totalMinutes % 60);
-  return `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  return `${sign}${hours}h:${minutes.toString().padStart(2, '0')}min`;
 };
 
 export const useMonthData = (month: number, year: number) => {
