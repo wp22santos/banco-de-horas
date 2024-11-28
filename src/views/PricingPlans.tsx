@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { CheckoutButton } from '../components/CheckoutButton';
 
 export const PricingPlans: React.FC = () => {

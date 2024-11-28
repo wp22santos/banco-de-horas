@@ -21,7 +21,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const sig = req.headers['stripe-signature'] as string;
+  const sig = req.headers['stripe-signature'];
+  if (!sig) {
+    return res.status(400).json({ message: 'No signature found' });
+  }
+
   const buf = await buffer(req);
   let event;
 
@@ -50,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { data: plan } = await supabase
           .from('subscription_plans')
           .select('id')
-          .eq('stripe_price_id', session.line_items?.data[0].price.id)
+          .eq('stripe_price_id', session.line_items?.data[0]?.price?.id)
           .single();
 
         if (!plan) {
