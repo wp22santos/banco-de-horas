@@ -19,7 +19,6 @@ export interface Subscription {
     trial_end_date: string | null;
     current_period_start: string | null;
     current_period_end: string | null;
-    mercadopago_subscription_id: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -30,6 +29,5 @@ export interface SubscriptionPayment {
     amount: number;
     status: 'pending' | 'approved' | 'rejected';
     payment_method: string;
-    mercadopago_payment_id: string;
     created_at: string;
 }

@@ -1,58 +1,61 @@
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe('pk_test_51QPiAhE1aaa3UksGfD9O704VhmE5GLlFaJ7FD6tStKy8n3w3xxg22oauQgvkp2hzN8GTELshBIiihZPcrHxikBwu00BogTHbjp');
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  priceId: string;
+  price: number;
+  interval: string;
+}
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+const stripePromise = loadStripe(process.env.VITE_STRIPE_PUBLISHABLE_KEY!);
 
-export class StripeService {
-  // Buscar produtos do Stripe
-  async getProducts() {
-    const response = await fetch(`${API_URL}/api/stripe/products`);
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(
-        errorData?.message || 
-        `Falha ao buscar produtos: ${response.status} ${response.statusText}`
-      );
+class StripeService {
+  async getProducts(): Promise<Product[]> {
+    try {
+      const response = await fetch('/api/stripe/products');
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      throw error;
     }
-    return response.json();
   }
 
-  // Criar sessão de checkout
-  async createCheckoutSession(priceId: string, userId: string) {
-    const response = await fetch(`${API_URL}/api/stripe/create-checkout-session`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        priceId,
-        userId,
-      }),
-    });
+  async createCheckoutSession(priceId: string, customerId?: string): Promise<string> {
+    try {
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priceId, customerId }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(
-        errorData?.message || 
-        `Falha ao criar sessão de checkout: ${response.status} ${response.statusText}`
-      );
-    }
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
 
-    const { sessionId } = await response.json();
-    const stripe = await stripePromise;
+      const { sessionId } = await response.json();
+      const stripe = await stripePromise;
+      
+      if (!stripe) {
+        throw new Error('Stripe not initialized');
+      }
 
-    if (!stripe) {
-      throw new Error('Falha ao carregar Stripe');
-    }
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+      
+      if (error) {
+        throw error;
+      }
 
-    // Redireciona para o checkout do Stripe
-    const { error } = await stripe.redirectToCheckout({
-      sessionId,
-    });
-
-    if (error) {
-      throw new Error(error.message);
+      return sessionId;
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      throw error;
     }
   }
 }

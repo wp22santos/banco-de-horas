@@ -6,8 +6,6 @@ import AuthView from './views/AuthView';
 import { YearView } from './views/YearView';
 import { MonthDetailView } from './views/MonthDetailView';
 import { PricingPlans } from './views/PricingPlans';
-import { PaymentSuccess } from './views/PaymentSuccess';
-import { PaymentError } from './views/PaymentError';
 import { AuthCallback } from './views/AuthCallback';
 
 function App() {
@@ -34,8 +32,6 @@ function App() {
             }
           />
           <Route path="/planos" element={<PricingPlans />} />
-          <Route path="/pagamento/sucesso" element={<PaymentSuccess />} />
-          <Route path="/pagamento/erro" element={<PaymentError />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </CacheProvider>
