@@ -1,3 +1,4 @@
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
@@ -7,7 +8,7 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

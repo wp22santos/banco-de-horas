@@ -1,5 +1,7 @@
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { buffer } from 'micro';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const supabase = createClient(
@@ -7,17 +9,25 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export default async function handler(req: any, res: any) {
+// Disable body parsing, need the raw body for webhook signature verification
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const sig = req.headers['stripe-signature'];
+  const sig = req.headers['stripe-signature'] as string;
+  const buf = await buffer(req);
   let event;
 
   try {
     event = stripe.webhooks.constructEvent(
-      req.body,
+      buf,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
