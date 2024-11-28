@@ -7,6 +7,7 @@ import { YearView } from './views/YearView';
 import { MonthDetailView } from './views/MonthDetailView';
 import { PricingPlans } from './views/PricingPlans';
 import { AuthCallback } from './views/AuthCallback';
+import { PaymentSuccess } from './pages/payment/success';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             }
           />
           <Route path="/planos" element={<PricingPlans />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </CacheProvider>

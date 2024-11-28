@@ -11,6 +11,7 @@
     "server": "node server.js"
   },
   "dependencies": {
+    "@stripe/stripe-js": "^5.2.0",
     "@supabase/supabase-js": "^2.39.0",
     "@types/react-datepicker": "^6.2.0",
     "cors": "^2.8.5",
@@ -22,7 +23,8 @@
     "react-datepicker": "^7.5.0",
     "react-dom": "^18.2.0",
     "react-multi-date-picker": "^4.5.2",
-    "react-router-dom": "^6.20.1"
+    "react-router-dom": "^6.20.1",
+    "stripe": "^17.4.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
