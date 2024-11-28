@@ -2,22 +2,27 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [
+  "functions": {
+    "api/stripe/*.ts": {
+      "runtime": "@vercel/node@latest"
+    }
+  },
+  "routes": [
     {
-      "source": "/api/stripe/products",
-      "destination": "/api/stripe/products"
+      "src": "/api/stripe/products",
+      "dest": "/api/stripe/products.ts"
     },
     {
-      "source": "/api/stripe/create-checkout-session",
-      "destination": "/api/stripe/create-checkout-session"
+      "src": "/api/stripe/create-checkout-session",
+      "dest": "/api/stripe/create-checkout-session.ts"
     },
     {
-      "source": "/webhook",
-      "destination": "/api/webhook"
+      "src": "/webhook",
+      "dest": "/api/webhook.ts"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [

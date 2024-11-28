@@ -1,0 +1,462 @@
+Como funcionam as assinaturas
+Saiba como gerenciar pagamentos recorrentes e ciclos de vida de assinaturas.
+Com Subscriptions, os clientes fazem pagamentos recorrentes para acessar um produto. Como você precisa cobrar as assinaturas no futuro, é necessário reter mais dados sobre os clientes do que nas compras avulsas.
+
+Objetos de assinatura
+Use estes recursos principais da API para criar e gerenciar assinaturas:
+
+Recurso	Definição
+Cliente	Representa um cliente que compra uma assinatura. Use o objeto Customer associado a uma assinatura para fazer e rastrear cobranças recorrentes e para gerenciar os produtos dos quais têm assinatura.
+Direito	Representa o acesso de um cliente a um recurso incluído em um produto de serviço que assina. Quando você cria uma assinatura para a compra recorrente de um produto por um cliente, um direito ativo é automaticamente criado para cada recurso associado a esse produto. Quando um cliente acessa seus serviços, use os direitos ativos para habilitar os recursos incluídos na assinatura.
+Recurso	Representa uma função ou capacidade que seus clientes podem acessar quando assinam um produto de serviço. Você pode incluir recursos em um produto criando ProductFeatures.
+Fatura	Uma declaração de valores devidos por um cliente que acompanha os status de pagamento desde o esboço até o pagamento (ou outro tipo de finalização). As assinaturas geram faturas automaticamente.
+PaymentIntent	Uma maneira de criar fluxos de pagamentos dinâmicos. Um PaymentIntent acompanha o ciclo de vida do fluxo de checkout de um cliente e aciona etapas adicionais de autenticação quando for exigido por mandatos regulatórios, regras personalizadas contra fraudes do Radar ou formas de pagamento baseadas em redirecionamento. As faturas criam PaymentIntents automaticamente.
+PaymentMethod	Os instrumentos de pagamento de um cliente que ele usa para pagar seus produtos. Por exemplo, você pode armazenar um cartão de crédito em um objeto Customer e usá-lo para fazer pagamentos recorrentes para esse cliente. Normalmente usado com as APIs Payment Intents ou Setup Intents.
+Price	Define o preço unitário, a moeda e o ciclo de faturamento de um produto.
+Product	Um produto ou serviço que sua empresa vende. Um produto de serviço pode incluir um ou mais recursos.
+ProductFeature	Representa a inclusão de um único recurso em um único produto. Cada produto está associado a um ProductFeature para cada recurso que é incluído, e cada recurso é associado a um ProductFeature para cada produto que o inclui.
+Subscription	Representa a compra recorrente agendada de um produto por um cliente. Use uma assinatura para coletar pagamentos e fornecer entregas repetidas ou acesso contínuo a um produto.
+Aqui está um exemplo de como produtos, recursos e direitos funcionam juntos. Imagine que você deseja configurar um serviço de assinatura que oferece dois níveis: um produto padrão com funções básicas e um produto avançado que adiciona funções estendidas.
+
+Você cria dois recursos: basic_features e extended_features.
+Você cria dois produtos: standard_product e advanced_product.
+Para o produto padrão, você cria uma ProductFeature que associa basic_features com standard_product.
+Para o produto avançado, você cria duas ProductFeatures: uma que associa basic_features com advanced_product e outra que associa extended_features com advanced_product.
+Um cliente, first_customer, assina o produto padrão. Quando você cria a assinatura, a Stripe cria automaticamente um Entitlement que associa first_customer com basic_features.
+
+Outro cliente, second_customer, assina o produto avançado. Quando você cria a assinatura, a Stripe cria automaticamente dois Entitlements: um que associa second_customer a basic_features e outro que associa second_customer com extended_features.
+
+You can determine which features to provision for a customer by retrieving their active entitlements or listening to the Active Entitlement Summary event. You don’t have to retrieve their subscriptions, products, and features.
+
+Como os objetos da Stripe funcionam em um ciclo de vida de assinatura.
+Exemplo de integração
+Esta seção descreve o exemplo de integração no GitHub, que mostra como criar uma integração com o Subscriptions. Se você está com tudo pronto para criar sua própria integração, consulte o guia de início rápido do Billing ou o guia de integração.
+
+Página de chegada
+No front-end, a página de chegada coleta inicialmente o e-mail. O aplicativo pode coletar outros dados específicos do cliente que você desejar, como nome de usuário ou endereço. Depois que o cliente clica no botão de inscrição, os dados coletados na página de chegada são enviados para o back-end. Esse processo cria um cliente e exibe a página de preços no front-end.
+
+Página de preços
+A página de preços exibe as opções de assinatura de acordo com os produtos e preços criados durante a configuração da integração, ou seja, não é preciso criar outros sempre que um cliente se inscreve. A página de preços exibe os preços criados, e os clientes escolhem a opção desejada. O exemplo no GitHub exibe um formulário de pagamento quando um cliente escolhe uma opção.
+
+Saiba mais sobre produtos e preços.
+
+Pagamento
+O formulário de pagamento coleta o nome e os dados do cartão. A Stripe hospeda esse formulário se você usar o Checkout. Esse é um dos principais recursos que permite receber pagamentos em conformidade com o PCI. Quando o cliente clica em Assinar:
+
+Cria uma assinatura com os IDs do cliente e do preço.
+Gera uma fatura para o ciclo inicial da assinatura.
+Coleta dados de pagamento e paga a fatura.
+Define a forma de pagamento como forma de pagamento padrão da assinatura, um requisito para os próximos pagamentos.
+Observação
+Confirme o pagamento antes de conceder acesso ao cliente.
+
+Para implementar isso:
+
+No code: se você não quiser programar, saiba como criar um Payment Link e compartilhá-lo com os clientes.
+Low-code: se você usa o Checkout, saiba como adicionar ao site um botão que cria uma sessão do Checkout.
+Programação personalizada: se você usa o Elements, saiba como coletar dados de pagamento e ativar a assinatura com o Payment Element ou Card Element.
+Provisionamento
+Use Direitos para determinar quando você pode conceder ou revogar o acesso a recursos de produtos dos seus clientes.
+
+Por outro lado, após o pagamento, você pode provisionar o produto com segurança para o cliente. Isso geralmente significa:
+
+Verificar se o status da assinatura é active.
+Conceder ao cliente o acesso aos produtos e recursos assinados.
+Saiba como usar destinos de evento para:
+
+Monitorar assinaturas ativas
+Gerenciar falhas de pagamento
+Verificar objetos Event
+Como funcionam os pagamentos de assinaturas
+Para simplificar o gerenciamento de falhas de pagamento e criar assinaturas antes de tentar o pagamento:
+
+Passe payment_behavior=default_incomplete quando criar uma assinatura. Se ela exige pagamento, é criada com um status incomplete. Nos demais casos, ela se torna imediatamente active.
+Ative uma assinatura incompleta pagando a primeira fatura.
+Passe a identificação da intenção de pagamento da fatura para a interface de usuário a fim de coletar dados de pagamento e confirmar a intenção de pagamento. Você pode usar o Elements, o SDK para Android ou o iOS SDK.
+Status do pagamento
+O processo de pagamento varia em função das formas de pagamento e da localização geográfica. Além disso, os pagamentos podem falhar inicialmente (o cliente pode informar um número de cartão incorreto ou não ter saldo suficiente). Por isso, há vários resultados possíveis para o pagamento.
+
+Um PaymentIntent acompanha o ciclo de vida de cada pagamento. A Stripe gera uma fatura e um PaymentIntent para cada vencimento da assinatura. O ID do PaymentIntent é associado à fatura e você pode acessá-lo nos objetos Invoice e Subscription. O estado do PaymentIntent afeta o estado da fatura e da assinatura. Veja como os vários resultados de um pagamento são associados aos diferentes status:
+
+Resultado do pagamento	Status do PaymentIntent	Status da fatura	Status da assinatura
+Sucesso	succeeded	paid	active
+Falhas por erro no cartão	requires_payment_method	open	incomplete
+Falhas por autenticação	requires_action	open	incomplete
+As próximas seções explicam esses status e o que fazer para cada um deles.
+
+Pagamento bem-sucedido
+Quando o pagamento é finalizado, o status do PaymentIntent é succeeded, e a assinatura torna-se active. Para formas de pagamento com períodos de processamento mais demorados, as assinaturas são ativadas imediatamente. Nesses casos, o status do PaymentIntent pode permanecer processing para uma assinatura active até que o pagamento seja finalizado.
+
+Com sua assinatura ativada, forneça acesso ao seu produto. Leia o guia para saber mais sobre o ciclo de vida da assinatura e ver práticas recomendadas de provisionamento.
+
+Resposta	Assinatura	PaymentIntent
+
+
+{
+  "id": "sub_1ELI8bClCIKljWvsvK36TXlC",
+  "object": "subscription",
+  "status": "active",
+  ...
+  "latest_invoice": {
+    "id": "in_EmGqfJMYy3Nt9M",
+    "status": "paid",
+    ...
+    "payment_intent": {
+      "status": "succeeded",
+      ...
+    }
+  }
+}
+active	succeeded
+Fluxo da rede de pagamentos por assinatura.
+Exige forma de pagamento
+Quando o pagamento falha por erro no cartão (por exemplo, uma recusa), o status do PaymentIntent é requires_payment_method, e a assinatura é incomplete.
+
+Resposta	Assinatura	PaymentIntent
+
+
+{
+  "id": "sub_1ELI8bClCIKljWvsvK36TXlC",
+  "object": "subscription",
+  "status": "incomplete",
+  ...
+  "latest_invoice": {
+    "id": "in_EmGqfJMYy3Nt9M",
+    "status": "open",
+    ...
+    "payment_intent": {
+      "status": "requires_payment_method",
+      ...
+    }
+  }
+}
+incomplete	requires_payment_method
+Para resolver esses cenários:
+
+Avise o cliente.
+Colete dados de pagamento e confirme o PaymentIntent.
+Atualize a forma de pagamento padrão na assinatura.
+Saiba como gerenciar falhas de pagamento de assinaturas.
+
+Como gerenciar falhas no pagamento de assinaturas.
+Exige ação
+Algumas formas de pagamento exigem autenticação do cliente com 3D Secure (3DS) para concluir o processo de pagamento. Se você usa a API Payment Intents, o valor de latest_invoice.payment_intent.status é requires_action quando um cliente precisa autenticar um pagamento. O 3DS conclui o processo de autenticação. Suas regras do Radar e as do banco emissor do cartão determinam se uma forma de pagamento precisa de autenticação.
+
+Geralmente, as regulamentações na Europa exigem o 3D Secure. Consulte Autenticação Forte de Cliente para determinar se o gerenciamento desse status é importante para a empresa. Se você já tiver uma integração de faturamento e quiser aceitar esse fluxo, consulte também o guia de migração para SCA do Billing.
+
+Resposta	Assinatura	PaymentIntent
+
+
+{
+  "id": "sub_1ELI8bClCIKljWvsvK36TXlC",
+  "object": "subscription",
+  "status": "incomplete",
+  ...
+  "latest_invoice": {
+    "id": "in_EmGqfJMYy3Nt9M",
+    "status": "open",
+    ...
+    "payment_intent": {
+      "status": "requires_action",
+      "client_secret": "pi_91_secret_W9",
+      "next_action": {
+        "type": "use_stripe_sdk",
+        ...
+      },
+      ...
+    }
+  }
+}
+incomplete	requires_action
+Para gerenciar esses cenários:
+
+Monitor da notificação de evento invoice.payment_action_required with destinos de evento. This indicates that authentication is required.
+Avise o cliente de que a autenticação é necessária.
+Acesse o segredo do cliente para a intenção de pagamento e passe-o em uma chamada para stripe.ConfirmCardPayment. Isso exibe um modal de autenticação para seus clientes, tenta o pagamento e, em seguida, fecha o modal e retorna o contexto para seu aplicativo.
+Monitore o evento invoice.paid no seu destino de evento para verificar se o pagamento foi bem-sucedido. Os usuários podem sair do aplicativo antes do término de confirmCardPayment(). Verificar se o pagamento foi bem-sucedido permite provisionar corretamente seu produto.
+Como gerenciar pagamentos de assinatura que exigem ação adicional do cliente.
+Cobranças recorrentes
+A Stripe gerencia as cobranças recorrentes para você de forma automática, incluindo:
+
+Faturamento automático dos clientes e tentativa de pagamento no início de novos ciclos de cobrança.
+Quando um pagamento falha, a Stripe faz novas tentativas usando o recurso Smart Retries ou seu cronograma personalizado de novas tentativas. Isso faz uma nova tentativa automática de pagamento de acordo com as configurações do Dashboard quando os cartões são recusados. Se uma falha retornar um código de recusa sem possibilidade de ser tentado novamente, as novas tentativas agendadas continuam, mas o pagamento somente é executado se você obter uma nova forma de pagamento.
+Você pode enviar um e-mail de cobrança aos clientes com pagamentos em atraso a fim de aumentar a chance de êxito na recuperação. Para pagamentos que exigem 3D Secure, você pode definir as configurações de faturamento para enviar um link hospedado aos clientes para que concluam o fluxo.
+
+Criar seu próprio gerenciamento de falhas nas cobranças recorrentes
+Se você não quer usar as ferramentas da Stripe para gerenciar falhas, pode criar suas próprias ferramentas. Quando um pagamento falha ou exige autenticação do cliente, o status da assinatura é definido como past_due e o status do PaymentIntent é requires_payment_method ou requires_action.
+
+Objetos envolvidos no gerenciamento de pagamentos de assinaturas com falha ou ação necessária.
+Para gerenciar esses cenários, configure um destino de evento e ouça o evento customer.subscription.updated para ser notificado quando as assinaturas entram no estado past_due:
+
+
+
+{
+  "id": "sub_E8uXk63MAbZbto",
+  "object": "subscription",
+  ...
+  "status": "past_due",
+  "latest_invoice": "in_1EMLu1ClCIKljWvsfTjRFAxa"
+}
+Para essas assinaturas, você precisa retornar os clientes ao aplicativo para coletar uma forma de pagamento diferente e finalizar o pagamento. Você pode usar um e-mail ou uma notificação enviada ao celular. A Stripe fornece e-mails de lembrete integrados para gerenciar esses casos. Você pode configurá-los na página de configurações de faturamento.
+
+Quando o cliente voltar ao aplicativo, reutilize o fluxo de falha de pagamento ou o fluxo de ação do cliente, dependendo do status do PaymentIntent associado. Depois que o pagamento é bem-sucedido, o status da assinatura é active, e o da fatura é paid.
+
+Gerenciar faturas sem pagamento
+Geralmente, assinaturas que incluem avaliações gratuitas, faturamento por uso, faturas com aplicação de cupons ou saldos de crédito de cliente geram faturas sem pagamento. Isso significa que você não cobra imediatamente o cliente na criação da fatura.
+
+Mesmo que você não cobre os clientes na primeira fatura, geralmente é útil autenticar e autorizar o cartão, pois isso pode aumentar a chance de êxito do primeiro pagamento diferente de zero. Esses pagamentos são conhecidos como pagamentos fora da sessão. A Stripe criou o SetupIntents para gerenciar esses cenários.
+
+Usar SetupIntents
+Você pode usar os SetupIntents para:
+
+Colete os dados de pagamento.
+Autentique o cartão do cliente para solicitar isenções depois.
+Autorize o cartão do cliente sem cobrá-lo.
+A autenticação de pagamentos permite que o cliente conceda permissões para cobrar o cartão. Esse é um requisito da Autenticação Forte de Cliente e, muitas vezes, é cumprido usando 3DS. A coleta de dados da forma de pagamento, e a autenticação garante uma cobrança bem-sucedida da forma de pagamento.
+
+Em cenários fora da sessão, o SetupIntents permite cobrar o primeiro pagamento diferente de zero dos clientes sem que eles tenham de voltar ao site ou aplicativo para autenticação, o que simplifica a experiência do usuário.
+
+O campo pending_setup_intent em uma assinatura não cancela automaticamente quando a assinatura termina. Escute os eventos customer.subscription.deleted e cancele manualmente uma assinatura SetupIntent se for necessário.
+
+A Stripe cria automaticamente SetupIntents para assinaturas que não exigem um pagamento inicial. Os processos de autenticação e autorização também são executados, se necessários. Se os dois são bem-sucedidos ou não são necessários, nenhuma ação é exigida, e o campo subscription.pending_setup_intent é null. Se um deles falha, a Stripe recomenda usar o SetupIntent no front-end para resolver o problema enquanto o cliente está na sessão. Nas próximas duas seções, explicamos detalhadamente como gerenciar cenários com falha de autenticação ou autorização.
+
+Gerenciar falhas de autenticação
+Lado do cliente
+As falhas de autenticação ocorrem quando a Stripe não consegue autenticar o cliente no emissor do cartão. Quando isso acontece, o status do SetupIntent é definido como requires_action.
+
+Como lidar com falhas de autenticação em pagamentos de assinaturas.
+Para resolver esses cenários, chame confirmCardSetup no front-end para que o cliente conclua manualmente o fluxo de autenticação. O exemplo de código abaixo expande o pending_setup_intent para concluir o fluxo.
+
+
+
+const {pending_setup_intent} = subscription;
+
+if (pending_setup_intent) {
+  const {client_secret, status} = subscription.pending_setup_intent;
+
+  if (status === "requires_action") {
+    const {setupIntent, error} = await stripe.confirmCardSetup(client_secret);
+
+    if (error) {
+      // Display error.message in your UI.
+    } else {
+      // The setup has succeeded. Display a success message.
+    }
+  }
+}
+Após a conclusão do fluxo, a autorização é executada, se necessária. Quando a autorização é bem-sucedida ou não é necessária, pending_setup_intent é atualizado para null depois da conclusão.
+
+Gerenciar falhas de autorização
+Lado do cliente
+As falhas na autorização de pagamento ocorrem quando a Stripe não consegue verificar se um cartão pode ser cobrado. Quando isso ocorre, o status do SetupIntent é definido como requires_payment_method. Geralmente, isso significa que cobranças subsequentes nesse cartão também falharão.
+
+Como gerenciar falhas de autorização de pagamento de assinaturas.
+Para resolver esses cenários, colete uma nova forma de pagamento e atualize a forma de pagamento padrão do cliente ou da assinatura. O exemplo de código abaixo expande pending_setup_intent para concluir o fluxo.
+
+
+
+const {pending_setup_intent, latest_invoice} = subscription;
+
+if (pending_setup_intent) {
+  const {client_secret, status} = subscription.pending_setup_intent;
+
+  if (status === "requires_action") {
+    const {setupIntent, error} = await stripe.confirmCardSetup(client_secret);
+
+    if (error) {
+      // Display error.message in your UI.
+    } else {
+      // The setup has succeeded. Display a success message.
+    }
+  } else if (status === "requires_payment_method") {
+    // Collect new payment method
+  }
+}
+O ciclo de vida da assinatura
+Este é o fluxo de assinatura recomendado:
+
+Comportamento do pagamento
+Quando você define payment_behavior como default_incomplete, o status da assinatura é incomplete. Saiba mais sobre por que recomendamos o uso desse tipo de comportamento de pagamento para assinaturas.
+
+Você cria a assinatura. O status da assinatura é incomplete (quando você segue o fluxo recomendado; para assinaturas criadas sem especificar payment_behavior, o status padrão é active).
+Uma fatura é criada para a assinatura. O status da fatura é open.
+O cliente paga a primeira fatura.
+Quando o pagamento é bem-sucedido:
+O status da assinatura muda para active
+O status da fatura é definido como paid
+A Stripe envia um evento invoice.paid aos seus destinos de evento configurados.
+Você provisiona acesso ao produto. Para confirmar se a fatura foi paga:
+Configure um destino de evento e escute o evento invoice.paid.
+Verifique manualmente o objeto de assinatura e procure subscription.status=active. O status muda para active quando a fatura é paga por uma cobrança automática ou manualmente pelo cliente.
+O status também pode se tornar trialing se você oferecer avaliações que não exigem pagamentos. Quando a avaliação termina, a assinatura muda para active e o cliente com a assinatura começa a ser cobrado.
+
+Fluxo de trabalho de criação e validade de assinaturas
+Comportamento do pagamento da assinatura
+Para simplificar o gerenciamento de pagamentos com falha, crie assinaturas com payment_behavior definido como default_incomplete. As assinaturas são criadas com o status incomplete, o que permite coletar e confirmar dados de pagamento em uma única interface de usuário. Quando você usa allow_incomplete ou error_if_incomplete, a Stripe tenta pagar imediatamente a fatura. Em caso de falha de pagamento, o status da assinatura muda para incomplete, ou a criação falha.
+
+Pagamentos bem-sucedidos
+Quando o cliente paga a fatura, o status da assinatura muda para active, e o da fatura muda para paid. Você pode conceder acesso ao produto.
+
+Janela de pagamento
+Os clientes têm cerca de 23 horas para concluir o pagamento. Nesse período, a assinatura permanece no status incomplete, e a fatura permanece open. Quando o cliente paga a fatura, a assinatura é atualizada para active, e a fatura muda para paid. Se o cliente não pagar, a assinatura será atualizada para incomplete_expired, e a fatura mudará para void.
+
+Esse intervalo existe porque o primeiro pagamento de uma assinatura geralmente é feito com o cliente na sessão. Se o cliente retornar ao aplicativo após 23 horas, crie outra assinatura para ele.
+
+Pagamentos malsucedidos
+O status da assinatura permanece active enquanto os pagamentos automáticos são bem-sucedidos. Quando o pagamento automático falha, a assinatura é atualizada para past_due, e a Stripe tenta recuperar o pagamento de acordo com as regras para novas tentativas. Se a recuperação também falhar, você poderá definir o status da assinatura como canceled, unpaid ou deixá-lo como past_due.
+
+Assinaturas não pagas
+Para assinaturas não pagas, a fatura mais recente permanece em aberto, mas não são feitas tentativas de pagamento. A assinatura continua a gerar faturas a cada ciclo de faturamento e permanecem no estado draft. Para reativar a assinatura, é preciso:
+
+Colete os novos dados de pagamento.
+Reative a cobrança automática definindo auto advance como true nas faturas provisórias.
+Finalize e pague as faturas em aberto. Pague a fatura mais recente antes da data de vencimento para atualizar o status para active.
+Assinaturas past_due são definidas como unpaid por padrão para oferecer o maior número de opções de reativação.
+
+Cancelar assinaturas
+O cancelamento da assinatura desativa a criação de faturas e interrompe a cobrança automática de todas as faturas da assinatura porque define auto_advance como false. Ela também exclui a assinatura e você não poderá mais atualizar a assinatura ou seus metadados. Além disso, a assinatura é excluída. Para que o cliente assine novamente, é preciso coletar novos dados de pagamento e criar outra assinatura.
+
+Anular uma fatura gerada por assinatura
+Se a assinatura estiver incomplete e você anular a primeira fatura gerada, a assinatura será atualizada para incomplete_expired. Se você anular a fatura mais recente de uma assinatura ativa e essa fatura não for a primeira, será aplicada a seguinte lógica a cada fatura (da mais recente para a mais antiga) até que uma das condições seja atendida:
+
+Em faturas no estado paid ou uncollectible, o estado da assinatura é definido como active.
+Se collection_method estiver definido como charge_automatically na fatura e a Stripe interromper a cobrança na fatura devido a limites de novas tentativas, o estado da assinatura será definido como canceled, unpaid ou past_due com base nas suas configurações de cobrança automática.
+Se collection_method estiver definido como send_invoice e a fatura estiver vencida, o estado da assinatura será definido como past_due.
+Se a fatura não tem em nenhum desses estados, as mesmas etapas são executadas na fatura mais recente.
+Se nenhuma fatura corresponder aos critérios acima, o estado da assinatura será definido como active.
+
+Sessões do Checkout
+Para integrações do Stripe Checkout, você não pode atualizar a assinatura ou sua fatura se a assinatura da sessão estiver no status incomplete. Escute o evento checkout.session.completed para fazer a atualização após a conclusão da sessão.
+
+Você também pode expirar a sessão se quiser cancelar a assinatura da sessão, anular a fatura da assinatura ou marcar a fatura como incobrável.
+
+Obter informações de referência
+Você pode usar os Stripe Apps de afiliados e indicados para configurar e gerenciar programas de indicados e afiliados com a Stripe, obter dados dos clientes e automatizar ajustes de comissão no Stripe Dashboard.
+
+Status da assinatura
+Status	Descrição
+trialing	A assinatura está em um período de avaliação e é seguro fornecer o produto para o cliente. A assinatura muda automaticamente para active quando o primeiro pagamento é feito.
+active	A assinatura está adimplente, e o pagamento mais recente foi bem-sucedido. É seguro fornecer o produto ao cliente.
+incomplete	É necessário fazer um pagamento bem-sucedido em até 23 horas para ativar a assinatura. Ou o pagamento exige uma ação, como autenticação do cliente. Assinaturas também podem estar incomplete se houver um pagamento pendente e o status do PaymentIntent for processing.
+incomplete_expired	O pagamento inicial da assinatura falhou, e não houve pagamento bem-sucedido dentro de 23 horas após a criação da assinatura. Essas assinaturas não geram cobrança para os clientes. Este status existe para que você possa rastrear os clientes que não conseguiram ativar as assinaturas.
+past_due	Payment on the latest finalized invoice either failed or wasn’t attempted. The subscription continues to create invoices. Your subscription settings determine the subscription’s next state. If the invoice is still unpaid after all Smart Retries have been attempted, you can configure the subscription to move to canceled, unpaid, or leave it as past_due. To move the subscription to active, pay the most recent invoice before its due date.
+canceled	A assinatura foi cancelada. Durante o cancelamento, a cobrança automática de todas as faturas não pagas é desativada (auto_advance=false). Esse é um estado terminal que não pode ser atualizado.
+unpaid	A fatura mais recente não foi paga, mas a assinatura permanece em vigor. Essa fatura continua aberta e as faturas continuam sendo geradas, mas não são feitas tentativas de pagamento. Você deve revogar o acesso ao produto quando a fatura é unpaid, pois já foram feitas várias tentativas de pagamento enquanto ela estava past_due. Para mudar a assinatura para active, pague a fatura mais recente antes do vencimento.
+paused	The subscription has ended its trial period without a default payment method and the trial_settings.end_behavior.missing_payment_method is set to pause. Invoices will no longer be created for the subscription. After a default payment method has been attached to the customer, you can resume the subscription.
+Eventos de assinatura
+Eventos são acionados sempre que uma assinatura é criada ou alterada. Nós enviamos alguns eventos imediatamente quando a assinatura é criada, mas outros se repetem em intervalos de faturamento regulares. Recomendamos ouvir eventos com um destino de evento.
+
+Verifique se a integração gerencia adequadamente os eventos. Por exemplo, você pode enviar um e-mail para o cliente quando um pagamento falha ou revogar o acesso dele quando uma assinatura é cancelada.
+
+A tabela a seguir descreve os eventos mais comuns associados a assinaturas e, se for o caso, sugere ações para gerenciá-los.
+
+
+Evento
+
+Descrição
+
+Filtrar...
+customer.created	Sent when a Customer is successfully created.
+customer.subscription.created	Sent when the subscription is created. The subscription status might be incomplete if customer authentication is required to complete the payment or if you set payment_behavior to default_incomplete. View subscription payment behavior to learn more.
+customer.subscription.deleted	Enviado quando a assinatura do cliente termina.
+customer.subscription.paused	Sent when a subscription’s status changes to paused. For example, this is sent when a subscription is configured to pause when a free trial ends without a payment method. Invoicing won’t occur until the subscription is resumed. We don’t send this event if payment collection is paused because invoices continue to be created during that time period.
+customer.subscription.resumed	Sent when a subscription previously in a paused status is resumed. This doesn’t apply when payment collection is unpaused.
+customer.subscription.trial_will_end	Sent three days before the trial period ends. If the trial is less than three days, this event is triggered.
+customer.subscription.updated	Sent when a subscription starts or changes. For example, renewing a subscription, adding a coupon, applying a discount, adding an invoice item, and changing plans all trigger this event.
+entitlements.active_entitlement_summary.updated	Enviado quando os direitos ativos de um cliente são atualizados. Quando receber esse evento, você pode provisionar ou cancelar o acesso aos recursos do produto. Leia mais sobre integração com direitos.
+invoice.created	Sent when an invoice is created for a new or renewing subscription. If Stripe fails to receive a successful response to invoice.created, then finalizing all invoices with automatic collection is delayed for up to 72 hours. Read more about finalizing invoices.
+Respond to the notification by sending a request to the Finalize an invoice API.
+invoice.finalized	Enviado quando uma fatura é finalizada e está pronta para pagamento.
+You can send the invoice to the customer. View invoice finalization to learn more.
+Depending on your settings, we automatically charge the default payment method or attempt collection. View emails after finalization to learn more.
+invoice.finalization_failed	The invoice couldn’t be finalized. Learn how to handle invoice finalization failures by reading the guide. Learn more about invoice finalization in the invoices overview guide.
+Inspect the Invoice’s last_finalization_error to determine the cause of the error.
+If you’re using Stripe Tax, check the Invoice object’s automatic_tax field.
+If automatic_tax[status]=requires_location_inputs, the invoice can’t be finalized and payments can’t be collected. Notify your customer and collect the required customer location.
+Se automatic_tax[status]=failed, tente a solicitação outra vez mais tarde.
+invoice.paid	Enviado quando a fatura é paga. Você pode provisionar acesso ao produto quando recebe este evento e status é active.
+invoice.payment_action_required	Sent when the invoice requires customer authentication. Learn how to handle the subscription when the invoice requires action.
+invoice.payment_failed
+
+Houve uma falha no pagamento de uma fatura. O status do PaymentIntent muda para requires_action. O status da assinatura continua incomplete somente na primeira fatura da assinatura. Você pode tomar várias providências quando um pagamento falha:
+
+Notify the customer. Read about how you can configure subscription settings to enable Smart Retries and other revenue recovery features.
+If you’re using PaymentIntents, collect new payment information and confirm the PaymentIntent.
+Update the default payment method on the subscription.
+invoice.upcoming	Sent a few days prior to the renewal of the subscription. The number of days is based on the number set for Upcoming renewal events in the Dashboard. For existing subscriptions, changing the number of days takes effect on the next billing period. You can still add extra invoice items, if needed.
+invoice.updated	Enviado quando um pagamento é bem-sucedido ou falha. Se o pagamento for bem-sucedido, o atributo paid será definido como true, e status será paid. Se o pagamento falhar, paid será definido como false, e status permanecerá open. As falhas de pagamento também acionam um evento invoice.payment_failed.
+payment_intent.created	Sent when a PaymentIntent is created.
+payment_intent.succeeded	Enviado quando um PaymentIntent conclui um pagamento.
+subscription_schedule.aborted	Enviado quando um cronograma de assinatura é cancelado porque o pagamento inadimplente encerrou a assinatura relacionada.
+subscription_schedule.canceled	Enviado quando um cronograma de assinatura é cancelado, o que também cancela qualquer assinatura associada ativa.
+subscription_schedule.completed	Sent when all phases of a subscription schedule complete.
+subscription_schedule.created	Enviado quando um novo cronograma de assinatura é criado.
+subscription_schedule.expiring	Enviado 7 dias antes da data de vencimento de um cronograma de assinatura.
+subscription_schedule.released	Sent when a subscription schedule is released, or stopped and disassociated from the subscription, which remains.
+subscription_schedule.updated	Enviado quando uma programação de assinatura é atualizada.
+Ciclo de vida da fatura
+A visão geral de faturas oferece uma explicação mais detalhada sobre o funcionamento das faturas. O ciclo de vida básico das faturas geradas por assinaturas tem a seguinte aparência:
+
+A assinatura gera uma nova fatura no estado draft.
+Cerca de uma hora após a criação da fatura, ela é finalizada (não pode mais ser alterada).
+O status é definido como open e a Stripe tenta pagá-la automaticamente usando a forma de pagamento padrão.
+Quando o pagamento é bem-sucedido, o status é atualizado para paid.
+Se o pagamento falhar, a fatura permanecerá open e a assinatura se tornará past_due.
+Neste fluxo, a Stripe não notifica o cliente sobre a fatura. A tentativa de pagamento da fatura é repetida automaticamente logo após sua geração. Se os e-mails do cliente estiverem ativados, enviaremos um recibo por e-mail.
+
+Configurações e recuperação de assinatura
+Suas configurações de assinatura determinam como a Stripe responde a falhas de pagamentos ou vencimento de assinaturas.
+
+Smart Retries
+Após a criação da fatura, o evento mais importante que pode acontecer é a falha do pagamento. As falhas ocorrem por vários motivos:
+
+Cliente sem forma de pagamento.
+A forma de pagamento expirou.
+O pagamento foi recusado.
+Você pode configurar a Stripe para refazer pagamentos que falharam. O Smart Retries use o machine learning da Stripe para escolher o momento ideal para refazer o pagamento durante um período configurável de até um 2 meses após a falha do pagamento inicial.
+
+Você também pode modificar o cronograma de novas tentativas com regras personalizadas. Até três tentativas podem ser configuradas, cada uma iniciada um número específico de dias após a tentativa anterior.
+
+Você pode usar o evento invoice.payment_failed para monitorar eventos de falha de pagamento de assinatura e tentar atualizar novamente. Após uma tentativa de pagamento de uma fatura, o valor de next_payment_attempt é definido usando as configurações de assinatura atuais do Dashboard.
+
+Quando a recuperação falha, o status da assinatura muda de acordo com as configurações. As opções são:
+
+Configuração	Descrição
+Cancelar a assinatura	A assinatura muda para um estado canceled após o número máximo de dias definido no cronograma de novas tentativas.
+Marcar a assinatura como não paga	A assinatura muda para um estado unpaid após o número máximo de dias definido no cronograma de novas tentativas. As faturas continuam sendo geradas e permanecem em um estado de rascunho.
+Deixar a assinatura vencida	A assinatura permanece em um estado past_due após o número máximo de dias definido no cronograma de novas tentativas. As faturas continuam sendo geradas e cobram o cliente com base em configurações de novas tentativas.
+Após a tentativa de pagamento final, não fazemos nenhuma outra tentativa. As alterações nas configurações de assinatura afetam apenas as tentativas futuras.
+
+E-mails
+A Stripe pode enviar diferentes e-mails para os clientes usando os endereços associados ao objeto Customer:
+
+Um lembrete de renovação próxima quando enviamos o evento invoice.upcoming.
+Uma notificação de pagamento não efetivado, solicitando que os clientes atualizem dos dados de pagamento. Saiba como ativar notificações de pagamentos não efetivados.
+Uma notificação de cartão vencendo quando o cartão default_source do cliente está prestes a expirar.
+Você pode personalizar seu URL para atualizar o cartão, bem como o seu logotipo e as cores usadas no e-mail, conforme descrito na documentação sobre recibos.
+
+Pagamento manual
+Você pode configurar a data de vencimento para faturas que usam o send_invoice collection method para receber pagamentos manuais. Também é possível configurar até três lembretes, desde 10 dias antes da data de vencimento até 60 dias depois.
+
+Você também pode tomar providências na assinatura 30, 60 ou 90 dias após o vencimento de uma fatura. As opções são:
+
+Configuração	Descrição
+Cancelar a assinatura	A assinatura muda para um estado canceled após o número máximo de dias definido no cronograma de novas tentativas.
+Marcar a assinatura como não paga	A assinatura muda para um estado unpaid após o número máximo de dias definido no cronograma de novas tentativas. As faturas continuam sendo geradas e ficam em um estado draft ou passam para um estado especificado nas suas configurações de fatura.
+Deixar a assinatura vencida	A assinatura permanece em um estado past_due após o número máximo de dias definido no cronograma de novas tentativas. As faturas continuam sendo geradas em um estado open.
+Saiba mais sobre status de assinaturas.
+
+Pagamentos que exigem 3D Secure
+Para pagamentos que exigem 3D Secure, a Stripe pode enviar um e-mail de confirmação ao cliente ao mesmo tempo que enviamos o evento invoice.payment_action_required. Também é possível configurar o envio de até três lembretes de 1 a 7 dias após o início do pagamento.
+
+Quando um pagamento não é concluído após o número de dias definido, você pode:
+
+Configuração	Descrição
+Cancelar a assinatura	A assinatura muda para um estado canceled após o número máximo de dias definido no cronograma de novas tentativas.
+Marcar a assinatura como não paga	A assinatura muda para um estado unpaid após o número máximo de dias definido no cronograma de novas tentativas. As faturas continuam sendo geradas e permanecem em um estado de rascunho.
+Deixar a assinatura vencida	A assinatura permanece em um estado past_due após o número máximo de dias definido no cronograma de novas tentativas. As faturas continuam sendo geradas e cobram o cliente com base em configurações de novas tentativas.
+Avaliações
+As bandeiras de cartão exigem que você informe seus clientes sobre as avaliações. A Stripe pode gerenciar essa comunicação para você. No Stripe Dashboard, é possível configurar o URL de cancelamento incluído nos e-mails de lembrete e no recibo da primeira fatura após o término da avaliação. Também existe a possibilidade de configurar a descrição no extrato para a primeira cobrança após a avaliação. Saiba mais sobre esses requisitos e configurações na página de avaliações.
+
+Alterar assinaturas
+A Stripe aceita modificar assinaturas existentes sem a necessidade de cancelá-las e recriá-las. As alterações mais significativas permitidas são fazer upgrade ou downgrade do preço da assinatura, ou cancelar ou suspender a cobrança de pagamento de uma assinatura ativa. Saiba mais sobre como modificar assinaturas existentes.
