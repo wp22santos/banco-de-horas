@@ -24,7 +24,8 @@
   "env": {
     "STRIPE_PUBLISHABLE_KEY": "@stripe_publishable_key",
     "STRIPE_SECRET_KEY": "@stripe_secret_key",
-    "STRIPE_WEBHOOK_SECRET": "@stripe_webhook_secret"
+    "STRIPE_WEBHOOK_SECRET": "@stripe_webhook_secret",
+    "FRONTEND_URL": "@frontend_url"
   },
   "headers": [
     {

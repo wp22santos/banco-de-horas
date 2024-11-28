@@ -1,64 +1,63 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+<<<<<<< HEAD
 import { useCache } from '../contexts/CacheContext';
+=======
+import { TimeEntry, NonAccountingEntry } from '../types';
+import { startOfMonth, endOfMonth, format } from 'date-fns';
+>>>>>>> f63d5117a5c6247e15db8b036fa2d26a18120f19
 
 interface QuarterData {
-  previsto: string;
-  trabalhado: string;
-  saldo: string;
+  months: {
+    [key: number]: {
+      timeEntries: TimeEntry[];
+      nonAccountingEntries: NonAccountingEntry[];
+      workingDays: number;
+      totalHours: number;
+    };
+  };
+  totalHours: number;
+  totalWorkingDays: number;
 }
 
 export const useQuarterData = (quarter: number, year: number) => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [data, setData] = useState<QuarterData | null>(null);
-  const { getQuarterData, setQuarterData, clearCache } = useCache();
-  const [updateTrigger, setUpdateTrigger] = useState(0);
-
-  const refetchData = () => {
-    clearCache();
-    setUpdateTrigger(prev => prev + 1);
-  };
 
   useEffect(() => {
-    const fetchQuarterData = async () => {
+    const fetchData = async () => {
       try {
-        // Verificar cache primeiro
-        const cachedData = getQuarterData(year, quarter);
-        if (cachedData) {
-          setData(cachedData);
-          return;
-        }
-
         setLoading(true);
         setError(null);
 
-        // Buscar dados do usuário atual
-        const session = await supabase.auth.getSession();
-        const userId = session.data.session?.user?.id;
-        if (!userId) {
-          throw new Error('Usuário não autenticado');
-        }
+        // Get user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
 
-        // Determinar os meses do trimestre
+        // Calculate start and end months for the quarter
         const startMonth = (quarter - 1) * 3 + 1;
         const endMonth = startMonth + 2;
-        
-        let totalExpectedMinutes = 0;
-        let totalWorkedMinutes = 0;
 
-        // Buscar dados de cada mês do trimestre
+        // Initialize months object
+        const months: QuarterData['months'] = {};
+        let totalQuarterHours = 0;
+        let totalQuarterWorkingDays = 0;
+
+        // Fetch data for each month in the quarter
         for (let month = startMonth; month <= endMonth; month++) {
-          // Calcular dias úteis do mês
-          const { data: workingDays, error: workingDaysError } = await supabase
-            .rpc('calculate_working_days', {
-              p_month: month,
-              p_year: year,
-              p_user_id: userId
-            });
+          try {
+            // Get time entries
+            const { data: timeEntries, error: timeError } = await supabase
+              .from('time_entries')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('month', month)
+              .eq('year', year);
 
-          if (workingDaysError) throw workingDaysError;
+            if (timeError) throw timeError;
 
+<<<<<<< HEAD
           // Calcular horas previstas usando a mesma fórmula do useMonthData
           const totalDays = new Date(year, month, 0).getDate();
           const expectedMinutes = Math.round((160 / totalDays) * workingDays * 60);
@@ -119,13 +118,85 @@ export const useQuarterData = (quarter: number, year: number) => {
       } catch (err: any) {
         console.error('Erro ao buscar dados do trimestre:', err);
         setError(err.message);
+=======
+            // Get non-accounting entries
+            const { data: nonAccountingEntries, error: nonAccError } = await supabase
+              .from('non_accounting_entries')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('month', month)
+              .eq('year', year);
+
+            if (nonAccError) throw nonAccError;
+
+            // Calculate working days
+            const firstDay = startOfMonth(new Date(year, month - 1));
+            const lastDay = endOfMonth(new Date(year, month - 1));
+            
+            const { data: workingDaysResult, error: workingDaysError } = await supabase
+              .rpc('calculate_working_days', {
+                start_date: format(firstDay, 'yyyy-MM-dd'),
+                end_date: format(lastDay, 'yyyy-MM-dd')
+              });
+
+            let workingDays: number;
+            
+            if (workingDaysError) {
+              console.warn('Error calculating working days:', workingDaysError);
+              // Fallback: count all weekdays
+              workingDays = Array.from(
+                { length: lastDay.getDate() },
+                (_, i) => new Date(year, month - 1, i + 1)
+              ).filter(date => ![0, 6].includes(date.getDay())).length;
+            } else {
+              workingDays = workingDaysResult;
+            }
+
+            totalQuarterWorkingDays += workingDays;
+
+            // Calculate total hours for the month
+            const totalHours = timeEntries?.reduce((acc, entry) => {
+              const start = new Date(`2000-01-01T${entry.start_time}`);
+              const end = new Date(`2000-01-01T${entry.end_time}`);
+              const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+              return acc + hours;
+            }, 0) || 0;
+
+            totalQuarterHours += totalHours;
+
+            months[month] = {
+              timeEntries: timeEntries || [],
+              nonAccountingEntries: nonAccountingEntries || [],
+              workingDays,
+              totalHours
+            };
+          } catch (monthError) {
+            console.error(`Error fetching data for month ${month}:`, monthError);
+            months[month] = {
+              timeEntries: [],
+              nonAccountingEntries: [],
+              workingDays: 0,
+              totalHours: 0
+            };
+          }
+        }
+
+        setData({
+          months,
+          totalHours: totalQuarterHours,
+          totalWorkingDays: totalQuarterWorkingDays
+        });
+      } catch (err) {
+        console.error('Error fetching quarter data:', err);
+        setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+>>>>>>> f63d5117a5c6247e15db8b036fa2d26a18120f19
       } finally {
         setLoading(false);
       }
     };
 
-    fetchQuarterData();
-  }, [quarter, year, updateTrigger]);
+    fetchData();
+  }, [quarter, year]);
 
-  return { loading, error, data, refetchData };
+  return { loading, error, data };
 };

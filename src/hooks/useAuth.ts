@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { User } from '@supabase/supabase-js';
 
 export interface AuthError {
   field?: string;
@@ -10,6 +11,7 @@ export interface AuthError {
 export const useAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<AuthError | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
 
   const handleError = (error: any) => {
@@ -26,6 +28,20 @@ export const useAuth = () => {
     }
   };
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
@@ -38,7 +54,7 @@ export const useAuth = () => {
 
       if (error) throw error;
       
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (error: any) {
       handleError(error);
     } finally {
@@ -95,6 +111,7 @@ export const useAuth = () => {
   return {
     loading,
     error,
+    user,
     login,
     register,
     resetPassword,

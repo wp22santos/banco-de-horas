@@ -147,6 +147,8 @@ export default function AuthView() {
                     }`}
                     placeholder="••••••••"
                     disabled={loading}
+                    autoComplete="current-password"
+                    required
                   />
                   <Lock className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
                 </div>
@@ -207,12 +209,12 @@ export default function AuthView() {
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <>
+                <React.Fragment>
                   {authMode === 'login' ? 'Entrar' :
                    authMode === 'register' ? 'Criar conta' :
                    'Enviar email de recuperação'}
                   <ArrowRight className="w-5 h-5 transform transition-transform group-hover:translate-x-1" />
-                </>
+                </React.Fragment>
               )}
             </button>
 
