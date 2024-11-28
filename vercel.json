@@ -7,22 +7,22 @@
       "runtime": "@vercel/node@latest"
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/stripe/products",
-      "dest": "/api/stripe/products.ts"
+      "source": "/api/stripe/products",
+      "destination": "/api/stripe/products"
     },
     {
-      "src": "/api/stripe/create-checkout-session",
-      "dest": "/api/stripe/create-checkout-session.ts"
+      "source": "/api/stripe/create-checkout-session",
+      "destination": "/api/stripe/create-checkout-session"
     },
     {
-      "src": "/webhook",
-      "dest": "/api/webhook.ts"
+      "source": "/webhook",
+      "destination": "/api/webhook"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
