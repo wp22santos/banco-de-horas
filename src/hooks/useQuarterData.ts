@@ -83,14 +83,9 @@ export const useQuarterData = (quarter: number, year: number) => {
               end = new Date(`2000-01-02T${entry.end_time}`);
             }
             
-            // Calculando a diferença em minutos
+            // Calculando a diferença em minutos (apenas tempo regular)
             const diffMinutes = Math.round((end.getTime() - start.getTime()) / 1000 / 60);
-            
-            // Adicionando o tempo noturno
-            const [nightHours, nightMinutes] = entry.night_time.split(':').map(Number);
-            const totalNightMinutes = (nightHours * 60) + nightMinutes;
-            
-            totalWorkedMinutes += diffMinutes + totalNightMinutes;
+            totalWorkedMinutes += diffMinutes;
           });
         }
 

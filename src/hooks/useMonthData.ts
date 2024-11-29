@@ -40,11 +40,8 @@ const calculateWorkedHours = (entries: TimeEntry[]) => {
     // Calculando a diferença em minutos
     const diffMinutes = Math.round((end.getTime() - start.getTime()) / 1000 / 60);
     
-    // Adicionando o tempo noturno (já vem calculado do backend)
-    const [nightHours, nightMinutes] = entry.night_time.split(':').map(Number);
-    const totalNightMinutes = (nightHours * 60) + nightMinutes;
-    
-    totalMinutes += diffMinutes + totalNightMinutes;
+    // Somando apenas o tempo regular (sem considerar o adicional noturno)
+    totalMinutes += diffMinutes;
   });
 
   const hours = Math.floor(totalMinutes / 60);
